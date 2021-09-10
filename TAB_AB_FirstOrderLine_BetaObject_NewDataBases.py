@@ -183,7 +183,7 @@ plot1.close()
 
 plot1.plot(Tc, pressure, 'o-');plot1.xlabel('p/bar'); plot1.ylabel('T_{AB}/mK')
 startpoint = round(21.1/0.05);endpoint = round(34.0/0.05);
-plot1.plot(TAB[startpoint:endpoint], pressure[startpoint:endpoint], 'o-'); plot1.ylabel('p/bar'); plot1.xlabel('T_{AB}/mK');
+plot1.plot(TAB[startpoint:endpoint], pressure[startpoint:endpoint], 'o-'); plot1.ylabel(r'p/bar'); plot1.xlabel(r'$T_{AB}/mK$');
 plot1.savefig('p_TAB_TC.pdf');
 plot1.show()
 

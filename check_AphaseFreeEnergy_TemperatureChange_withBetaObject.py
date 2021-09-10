@@ -196,7 +196,7 @@ for iT in range(0, lengthT, 1):
 # Plot all data
 for T in Temperature:
     indexT = math.floor(T/stepT)
-    plot1.plot(Delta, fGL_array[indexT,:], '-'); plot1.ylabel('f_{GL}.N(o)⁻1/ev^2'); plot1.xlabel('\Delta/ev')
+    plot1.plot(Delta, fGL_array[indexT,:], '-'); plot1.ylabel(r'$f^{A}_{GL}.N(0)^{-1}/ev^{2}$'); plot1.xlabel(r'$\Delta$/ev')
 
 plot1.show()    
     

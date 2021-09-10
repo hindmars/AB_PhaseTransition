@@ -210,8 +210,8 @@ for iT in range(0, lengthT, 1):
 for iT in range(0, lengthT, 1):
     #indexT = math.floor(T/stepT)
     indexT = iT
-    plot1.plot(Delta, fBGL_array[indexT,:], '-.'); plot1.ylabel('fB_{GL}.N(o)⁻1/ev^2'); plot1.xlabel('\Delta/ev')
-    plot1.plot(Delta, fAGL_array[indexT,:], '-'); plot1.ylabel('fA_{GL}.N(o)⁻1/ev^2'); plot1.xlabel('\Delta/ev')
+    plot1.plot(Delta, fBGL_array[indexT,:], '-.'); plot1.ylabel(r'$f^{B}_{GL}.N(0)^{-1}/ev^{2}$'); plot1.xlabel(r'$\Delta$/ev')
+    plot1.plot(Delta, fAGL_array[indexT,:], '-'); plot1.ylabel(r'$f_{GL}.N(0)^{-1}/ev^{2}$'); plot1.xlabel(r'$\Delta$/ev')
 
 plot1.show()    
     
