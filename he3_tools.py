@@ -7,7 +7,7 @@ Created on Fri Sep 10 15:04:39 2021
 """
 
 import numpy as np
-
+import scipy.special as sp
 
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
@@ -39,25 +39,36 @@ c_list = [c1, c2, c3, c4, c5]
 
 # For polynomial fit method
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 2
-# Gives different values.  Typos, or pressure units?
-# Check also Wiman thesis
-
-# Only beta_1 at first.
+# Doesn't work at the moment, some unit miunserstanding or misprint?
 a1 = [9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
+a_list = [a1[::-1]] # polyfit wants highest power first
 
 
-
-a_list = [a1]
+zeta3 = sp.zeta(3)
+beta_const = 7 * zeta3/(240 * np.pi**2)
 
 
 # Functions
 
+def delta_beta_norm(p, n, method="interp"):
+    # strong coupling corrections to material parameters, in units of 
+    # the modulus of the first weak coupling parameter
+    if method == "interp":
+        return delta_beta_norm_interp(p, n)
+    elif method == "polyfit":
+        return delta_beta_norm_polyfit(p, n)
+    else:
+        raise ValueError("error: strong coupling parameter method must be interp or polyfit")
+        
+    return
+
 def delta_beta_norm_interp(p, n): 
+    # Interpolation method
     return np.interp(p, p_nodes, c_list[n-1])
 
 
-def delta_beta_norm_poly(p, n): 
-    
+def delta_beta_norm_polyfit(p, n): 
+    # Plynomial method, not implemented yet
     if n==1:
         return np.poly1d(a_list[n-1], len(a_list[n-1]))(p)
     else:
@@ -65,3 +76,32 @@ def delta_beta_norm_poly(p, n):
         return
 
 
+def beta_norm(t, p, n):
+    # Compålete material parameter including strong coupling correction, in units of 
+    # the modulus of the first weak coupling parameter 
+    if n==1:
+        b = -1
+    elif 1 < n < 5:
+        b = 2
+    elif n==5:
+        b = -2
+    return (b + t * delta_beta_norm(p, n))
+
+
+def beta_A_norm(t, p):    
+    # Material parameter for B phase
+    return beta_norm(t, p, 2) +  beta_norm(t, p, 4) + beta_norm(t, p, 5)
+
+def beta_B_norm(t, p):
+    # Material parameter for B phase
+    return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/3
+
+def f_A_norm(t, p):
+    # Normalised free energy density for A phase, in unots of N(0) (k_B T_c)^2
+    return -0.25*(t - 1)**2 * (beta_const/9) /( beta_A_norm(t, p))
+    
+def f_B_norm(t, p):
+    # Normalised free energy density for B phase, in unots of N(0) (k_B T_c)^2
+    return -0.25*(t - 1)**2 * (beta_const/9) /( beta_B_norm(t, p))
+    
+    
