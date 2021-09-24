@@ -9,6 +9,11 @@ Created on Fri Sep 10 15:04:39 2021
 import numpy as np
 import scipy.special as sp
 
+import scipy.constants as c
+
+
+cphy = c.physical_constants
+
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
@@ -37,6 +42,26 @@ c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660,
 c_list = [c1, c2, c3, c4, c5]
 
 
+Tc_data_mK = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 
+      2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.48]
+
+# particle_density, nm^{-3}
+np_data = [16.28, 17.41, 18.21, 18.85, 19.34, 19.75, 20.16, 20.60, 21.01, 21.44, 21.79, 
+       22.96, 22.36, 22.54, 22.71, 22.90, 23.22, 23.87]
+
+# Effective mass ratio
+mstar_m_data = [2.80, 3.05, 3.27, 3.48, 3.68, 3.86, 4.03, 4.20, 4.37, 4.53, 4.70, 4.86, 
+           5.02, 5.18, 5.34, 5.50, 5.66, 5.8]
+
+# Fermi velocity, m/s
+vf_data = [59.03, 55.41, 52.36, 49.77, 47.56, 45.66, 44.00, 42.51, 41.17, 39.92, 38.74, 
+      37.61, 36.53, 35.50, 34.53, 33.63, 32.85, 32.23]
+
+# Coherence length at T=0, nm
+xi0_data = [77.21, 57.04, 45.85, 38.77, 33.91, 30.37, 27.66, 25.51, 23.76, 22.29, 21.03, 
+       19.94, 18.99, 18.15, 17.41, 16.77, 16.22, 15.76]
+
+
 # For polynomial fit method
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 2
 # Doesn't work at the moment, some unit miunserstanding or misprint?
@@ -46,9 +71,55 @@ a_list = [a1[::-1]] # polyfit wants highest power first
 
 zeta3 = sp.zeta(3)
 beta_const = 7 * zeta3/(240 * np.pi**2)
+xiGL_const = np.sqrt(7 * zeta3 /    20)
+
+# Helium 3 mass in u
+mhe3_u = 3.0160293 
+mhe3_kg = mhe3_u * cphy["atomic mass constant"][0]
+
+kB = c.k
+hbar = c.hbar
 
 
 # Functions
+
+def T_mK(t, p):
+    # converts reduced temperature to temperature
+    return t * np.interp(p, p_nodes, Tc_data_mK)
+
+
+def npart(p):
+    # particle density at pressure p
+    return np.interp(p, p_nodes, np_data)
+
+
+def mstar_m(p):
+    # effective mass ratio at pressure p
+    return np.interp(p, p_nodes, mstar_m_data)
+
+
+def vf(p):
+    # Fermi velocity at pressure p
+    return np.interp(p, p_nodes, vf_data)
+
+
+def xi0(p):
+    # Zero T Cooper pair correlation length at pressure p
+    return np.interp(p, p_nodes, xi0_data)
+
+def xi(t, p):
+    # Ginzburg Landau correlation length at pressure p
+    return xiGL_const*xi0(p)/(1-t)**0.5
+
+def N0(p):
+    # Density of states at Fermi surface, units nm^{-3} J^{-1}
+    return npart(p) * 1.5 / (mhe3_kg * mstar_m(p) * vf(p)**2)
+
+def f_scale(p):
+    # Free energy denisty units Joule per nm3 (?)
+    return N0(p) * (kB * T_mK(1, p) * 1e-3)**2
+    
+
 
 def delta_beta_norm(p, n, method="interp"):
     # strong coupling corrections to material parameters, in units of 
@@ -89,7 +160,7 @@ def beta_norm(t, p, n):
 
 
 def beta_A_norm(t, p):    
-    # Material parameter for B phase
+    # Material parameter for A phase
     return beta_norm(t, p, 2) +  beta_norm(t, p, 4) + beta_norm(t, p, 5)
 
 def beta_B_norm(t, p):
@@ -104,4 +175,30 @@ def f_B_norm(t, p):
     # Normalised free energy density for B phase, in unots of N(0) (k_B T_c)^2
     return -0.25*(t - 1)**2 * (beta_const/9) /( beta_B_norm(t, p))
     
+
+def t_AB(p):
     
+    t_ab_val = (1/3)/ (delta_beta_norm(p,1) + (delta_beta_norm(p,3) - 2*delta_beta_norm(p,4) - 2*delta_beta_norm(p,5))/3) 
+    
+    if isinstance(t_ab_val, np.ndarray):
+        t_ab_val[t_ab_val > 1] = np.nan
+    elif t_ab_val > 1:
+        t_ab_val = np.nan
+            
+    
+    return  t_ab_val
+
+
+def mass_B_norm(t, p, JC):
+    
+    bb = beta_B_norm(t, p)
+    
+    if JC == "1-":        
+        m2 = (- beta_norm(t, p, 1)+ (beta_norm(t, p, 4) - beta_norm(t, p, 3) - beta_norm(t, p, 5))/3) / bb
+    elif JC == "2+":
+        m2 = ((beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/3) / bb
+    elif JC == "2-":
+        m2 = (- beta_norm(t, p, 1)) / bb
+
+    return np.sqrt(m2)        
+
