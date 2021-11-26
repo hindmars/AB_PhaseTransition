@@ -181,6 +181,7 @@ class quartic_potential:
         ax.plot(phi/self.phi_b, self.v(phi))
         ax.set_xlabel(r'$\phi/\phi_{\rm b}$')
         ax.set_ylabel(r'$V(\phi)$')
+        ax.grid()
         return ax
         
 
@@ -211,12 +212,23 @@ class grid_1d:
 
 class thin_wall_bubble:
     
-    def __init__(self, pot):
-        # Only in 3D at the moment - needs also 4D case
+    def __init__(self, pot, dim=3):
         self.surface_energy = np.sqrt(pot.lam/2) * pot.phi_b**3/6
         self.energy_diff = pot.v(0)
-        self.r_bub = 2*self.surface_energy/self.energy_diff
-        self.e_bub = (16*np.pi/3) * self.surface_energy**3/self.energy_diff**2
+        if self.energy_diff > 0:
+            if dim == 4:
+                self.r_bub = 3*self.surface_energy/self.energy_diff
+                self.e_bub = (27*np.pi**2/2) * self.surface_energy**4/self.energy_diff**3
+            if dim == 3:
+                self.r_bub = 2*self.surface_energy/self.energy_diff
+                self.e_bub = (16*np.pi/3) * self.surface_energy**3/self.energy_diff**2
+            elif dim == 2:
+                self.r_bub = self.surface_energy/self.energy_diff
+                self.e_bub = np.pi * self.surface_energy**2/self.energy_diff
+                
+        else:
+            self.r_bub = np.inf
+            self.e_bub = np.inf
 
 
 def field_eqn(phi, pot, gr):
@@ -245,12 +257,16 @@ def initial_condition(gr, pot, bub):
     m2 = pot.v_prime_prime(pot.phi_b)
     k = np.sqrt(m2/4)
 
-    phi_init = 0.25*(1 - np.tanh(k*(gr.x - bub.r_bub)))*(1 + np.tanh(k*(gr.x + bub.r_bub )))  
+    rb = bub.r_bub
+    if rb == np.inf:
+        rb = gr.R/2
+
+    phi_init = 0.25*(1 - np.tanh(k*(gr.x - rb)))*(1 + np.tanh(k*(gr.x + rb )))  
 
     return phi_init
 
 
-def krylov_bubble(param, T=None, gr_pars=(200,20), display=False):
+def krylov_bubble(param, T=None, gr_pars=(200,20), dim=3, display=False):
     """
     Apply Krylov solver to find unstable bubble solution. 
     If temperature T not given, assumes param is value of order parameter at maximum, for 
@@ -271,8 +287,8 @@ def krylov_bubble(param, T=None, gr_pars=(200,20), display=False):
         
     
     print(type(phi_m), phi_m)
-    gr = grid_1d(*gr_pars)
-    bub = thin_wall_bubble(pot)
+    gr = grid_1d(*gr_pars, dim=dim)
+    bub = thin_wall_bubble(pot, dim=dim)
     
     phi_init = initial_condition(gr, pot, bub)
     
@@ -306,8 +322,12 @@ def energy(phi, pot, gr):
         vol_factor = 4*np.pi/3
     elif gr.dim == 4:
         vol_factor = 2*np.pi**2
+    elif gr.dim == 1:
+        vol_factor=1    
+    elif gr.dim == 2:
+        vol_factor=2*np.pi    
     else:
-        raise ValueError("energy: only with grid.dim = 3,4 at the moment")
+        raise ValueError("energy: only with grid.dim = 1,2,3,4 at the moment")
     
     first = (phi_plus  - phi)/gr.dx
     e_grad = vol_factor * 0.5*np.trapz(first**2, gr.x**(gr.dim) )
