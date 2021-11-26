@@ -28,16 +28,24 @@ vanishing low energy.
 
 To get started, try:
     import critical_bubble_minimal as cbm
-    r, phi = cbm.krylov_bubble(0.4,display=True)
+    phi, pot, gr = cbm.krylov_bubble(0.4,display=True)
 
 First argument is phi_m.
 
 The computation is carried out on a default grid with 200 points and max radius 20
 You can change these values with e.g.
 
-    r, phi = cbm.krylov_bubble(0.45, gr_pars=(400,40))
+    phi, pot, gr = cbm.krylov_bubble(0.45, gr_pars=(400,40))
 
 (this is more like a thin wall bubble)
+
+It also works in dimensions 1, 2, 3 and 4, e.g.
+
+    phi, pot, gr = cbm.krylov_bubble(0.45, gr_pars=(400,40), dim=4)
+
+If you want to know the energy
+
+    cbm.energy(phi, pot, gr)
 
 Enjoy!
 
