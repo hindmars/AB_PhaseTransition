@@ -70,7 +70,8 @@ a_list = [a1[::-1]] # polyfit wants highest power first
 
 
 zeta3 = sp.zeta(3)
-beta_const = 7 * zeta3/(240 * np.pi**2)
+# beta_const = 7 * zeta3/(240 * np.pi**2)
+beta_const = 7 * zeta3/(80 * np.pi**2)
 xiGL_const = np.sqrt(7 * zeta3 /    20)
 
 # Helium 3 mass in u
@@ -80,50 +81,69 @@ mhe3_kg = mhe3_u * cphy["atomic mass constant"][0]
 kB = c.k
 hbar = c.hbar
 
+# Order parameter directions
+
+e = []
+e.append(np.array([0, 0, 1]))
+e.append(np.array([1, 1j, 0])/np.sqrt(2))
+e.append(np.array([1, -1j, 0])/np.sqrt(2))
+
+id3 = np.identity(3)
+D_A = np.outer(e[0], e[1])
+D_B = id3/np.sqrt(3)
+D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 
 # Functions
 
 def T_mK(t, p):
-    # converts reduced temperature to temperature
+    """Converts reduced temperature to temperature in mK.
+    """
     return t * np.interp(p, p_nodes, Tc_data_mK)
 
 
 def npart(p):
-    # particle density at pressure p
+    """Particle density at pressure p.
+    """
     return np.interp(p, p_nodes, np_data)
 
 
 def mstar_m(p):
-    # effective mass ratio at pressure p
+    """Effective mass ratio at pressure p.
+    """
     return np.interp(p, p_nodes, mstar_m_data)
 
 
 def vf(p):
-    # Fermi velocity at pressure p
+    """Fermi velocity at pressure p.
+    """
     return np.interp(p, p_nodes, vf_data)
 
 
 def xi0(p):
-    # Zero T Cooper pair correlation length at pressure p
+    """Zero T Cooper pair correlation length at pressure p.
+    """
     return np.interp(p, p_nodes, xi0_data)
 
 def xi(t, p):
-    # Ginzburg Landau correlation length at pressure p
+    """Ginzburg Landau correlation length at pressure p.
+    """
     return xiGL_const*xi0(p)/(1-t)**0.5
 
 def N0(p):
-    # Density of states at Fermi surface, units nm^{-3} J^{-1}
+    """Density of states at Fermi surface, units nm^{-3} J^{-1}.
+    """
     return npart(p) * 1.5 / (mhe3_kg * mstar_m(p) * vf(p)**2)
 
 def f_scale(p):
-    # Free energy denisty units Joule per nm3 (?)
-    return N0(p) * (kB * T_mK(1, p) * 1e-3)**2
+    """Free energy denisty units Joule per nm3 (?).
+    """
+    # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
+    return (1/3) * N0(p) * (kB * T_mK(1, p) * 1e-3)**2
     
-
-
 def delta_beta_norm(p, n, method="interp"):
-    # strong coupling corrections to material parameters, in units of 
-    # the modulus of the first weak coupling parameter
+    """Strong coupling corrections to material parameters, in units of 
+    the modulus of the first weak coupling parameter.
+    """
     if method == "interp":
         return delta_beta_norm_interp(p, n)
     elif method == "polyfit":
@@ -134,50 +154,92 @@ def delta_beta_norm(p, n, method="interp"):
     return
 
 def delta_beta_norm_interp(p, n): 
-    # Interpolation method
+    """Interpolation method.
+    """
     return np.interp(p, p_nodes, c_list[n-1])
 
 
 def delta_beta_norm_polyfit(p, n): 
-    # Plynomial method, not implemented yet
+    """Polynomial method, not implemented yet.
+    """
     if n==1:
         return np.poly1d(a_list[n-1], len(a_list[n-1]))(p)
     else:
         raise ValueError("only beta_1 implemented as yet")
         return
 
+def alpha_norm(t):
+    return t - 1
 
 def beta_norm(t, p, n):
-    # Compålete material parameter including strong coupling correction, in units of 
-    # the modulus of the first weak coupling parameter 
+    """Complete material parameter including strong coupling correction, in units of 
+    f_scale/(2 * np.pi * kB * T)**2
+    """ 
     if n==1:
         b = -1
     elif 1 < n < 5:
         b = 2
     elif n==5:
         b = -2
-    return (b + t * delta_beta_norm(p, n))
+    else:
+        raise ValueError("beta_norm: n must be between 1 and 5")
+    return beta_const*(b + t * delta_beta_norm(p, n))
 
+def beta_norm_asarray(t, p):
+    beta_norm_list = [ beta_norm(t, p, n) for n in range(1,6)]
+    return np.array(beta_norm_list)
 
 def beta_A_norm(t, p):    
-    # Material parameter for A phase
+    """Material parameter for A phase.
+    """
     return beta_norm(t, p, 2) +  beta_norm(t, p, 4) + beta_norm(t, p, 5)
 
 def beta_B_norm(t, p):
-    # Material parameter for B phase
+    """Material parameter for B phase.
+    """
     return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/3
 
+def beta_planar_norm(t, p):
+    """Material parameter for B phase.
+    """
+    return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/2
+
 def f_A_norm(t, p):
-    # Normalised free energy density for A phase, in unots of N(0) (k_B T_c)^2
-    return -0.25*(t - 1)**2 * (beta_const/9) /( beta_A_norm(t, p))
+    """Normalised free energy density for A phase, in units of (1/3) N(0) (k_B T_c)^2.
+    """
+    return -0.25* alpha_norm(t)**2 /( beta_A_norm(t, p))
     
 def f_B_norm(t, p):
-    # Normalised free energy density for B phase, in unots of N(0) (k_B T_c)^2
-    return -0.25*(t - 1)**2 * (beta_const/9) /( beta_B_norm(t, p))
-    
+    """Normalised free energy density for B phase, in units of (1/3) N(0) (k_B T_c)^2.
+    """
+    return -0.25* alpha_norm(t)**2 /( beta_B_norm(t, p))
+
+def f_planar_norm(t, p):
+    """Normalised free energy density for planar phase, in units of (1/3) N(0) (k_B T_c)^2.
+    """
+    return -0.25* alpha_norm(t)**2 /( beta_planar_norm(t, p))
+
+def delta_A_norm(t, p):
+    """Gap parameter for A phase, normalised to (2 * pi * kB * Tc)
+    """    
+    return np.sqrt(- alpha_norm(t)/(2 * beta_A_norm(t,p)))
+
+
+def delta_B_norm(t, p):
+    """Gap parameter for B phase, normalised to (2 * pi * kB * Tc)
+    """
+    return  np.sqrt(- alpha_norm(t)/(2 * beta_B_norm(t, p)))
+
+def delta_planar_norm(t, p):
+    """Gap parameter for planar phase, normalised to (2 * pi * kB * Tc)
+    """
+    return  np.sqrt(- alpha_norm(t)/(2 * beta_planar_norm(t, p)))
+
+
 
 def t_AB(p):
-    
+    """ AB transition temoerature at pressure p, normalised to Tc.
+    """
     t_ab_val = (1/3)/ (delta_beta_norm(p,1) + (delta_beta_norm(p,3) - 2*delta_beta_norm(p,4) - 2*delta_beta_norm(p,5))/3) 
     
     if isinstance(t_ab_val, np.ndarray):
@@ -201,4 +263,81 @@ def mass_B_norm(t, p, JC):
         m2 = (- beta_norm(t, p, 1)) / bb
 
     return np.sqrt(m2)        
+
+
+def tr(a):
+    d = a.ndim    
+    return np.trace(a, axis1=d-2,  axis2=d-1 )
+
+
+def U(A, alpha_norm, beta_norm_arr):
+    """
+    Bulk free energy for superfluid He3
+
+    Parameters
+    ----------
+    A : ndarray
+        order parameter.
+    alpha_norm : float
+        alpha parameter, normalised.
+    beta_norm_arr : ndarray, shape (5,1)
+        beta parameters, normalised.
+
+    Returns
+    -------
+    float or ndarray
+        Normalised bulk free energy.
+
+    """
+    bn = beta_norm_arr
+    dim = A.ndim
+    
+    A_T = np.swapaxes(A, dim-2, dim-1)
+    A_C = np.conj(A)
+    A_H = np.conj(A_T)
+
+    Un0 = alpha_norm * tr( np.matmul(A , A_H) )
+    
+    Un1 = bn[0] *  tr( np.matmul(A , A_T)) * tr(np.matmul(A_C , A_H) ) 
+    Un2 = bn[1] *  tr( np.matmul(A , A_H) )**2
+    Un3 = bn[2] *  tr( np.matmul(np.matmul(A , A_T) , np.matmul(A_C , A_H) )  )
+    Un4 = bn[3] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
+    Un5 = bn[4] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
+    return Un0 + Un1 + Un2 + Un3 + Un4 + Un5
+
+
+def dU_dA(A, alpha_norm, beta_norm_arr):
+    """
+    Derivatiave of bulk free energy for superfluid He3
+
+    Parameters
+    ----------
+    A : ndarray
+        order parameter.
+    alpha_norm : float
+        alpha parameter, normalised.
+    beta_norm_arr : ndarray, shape (5,1)
+        beta parameters, normalised.
+
+    Returns
+    -------
+    float or ndarray
+        Normalised derivative of bulk free energy.
+
+    """
+    bn = beta_norm_arr
+    dim = A.ndim
+    
+    A_T = np.swapaxes(A, dim-2, dim-1)
+    A_C = np.conj(A)
+    A_H = np.conj(A_T)
+
+    dUn0 = alpha_norm * A_H
+        
+    dUn1 = 2 * bn[0] *  np.multiply.outer(tr( np.matmul(A_C , A_H)), id3 ) * A 
+    dUn2 = 2 * bn[1] *  np.multiply.outer(tr( np.matmul(A , A_H)), id3 ) * A_H 
+    dUn3 = 2 * bn[2] *  np.matmul(A_T , np.matmul(A_C , A_H))
+    dUn4 = 2 * bn[3] *  np.matmul(A_H , np.matmul(A   , A_H))
+    dUn5 = 2 * bn[4] *  np.matmul(A_H , np.matmul(A_C , A_T))
+    return dUn0 + dUn1 + dUn2 + dUn3 + dUn4 + dUn5
 
