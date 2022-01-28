@@ -308,7 +308,7 @@ def U(A, alpha_norm, beta_norm_arr):
 
 def dU_dA(A, alpha_norm, beta_norm_arr):
     """
-    Derivatiave of bulk free energy for superfluid He3
+    Derivative of bulk free energy for superfluid He3.')
 
     Parameters
     ----------
@@ -332,12 +332,12 @@ def dU_dA(A, alpha_norm, beta_norm_arr):
     A_C = np.conj(A)
     A_H = np.conj(A_T)
 
-    dUn0 = alpha_norm * A_H
+    dUn0 = alpha_norm * A
         
-    dUn1 = 2 * bn[0] *  np.multiply.outer(tr( np.matmul(A_C , A_H)), id3 ) * A 
-    dUn2 = 2 * bn[1] *  np.multiply.outer(tr( np.matmul(A , A_H)), id3 ) * A_H 
-    dUn3 = 2 * bn[2] *  np.matmul(A_T , np.matmul(A_C , A_H))
-    dUn4 = 2 * bn[3] *  np.matmul(A_H , np.matmul(A   , A_H))
-    dUn5 = 2 * bn[4] *  np.matmul(A_H , np.matmul(A_C , A_T))
+    dUn1 = 2 * bn[0] *  np.matmul(np.multiply.outer(tr( np.matmul(A , A_T)), id3 ) , A_C)
+    dUn2 = 2 * bn[1] *  np.matmul(np.multiply.outer(tr( np.matmul(A , A_H)), id3 ) , A )
+    dUn3 = 2 * bn[2] *  np.matmul(A , np.matmul(A_T , A_C))
+    dUn4 = 2 * bn[3] *  np.matmul(A , np.matmul(A_H   , A))
+    dUn5 = 2 * bn[4] *  np.matmul(A_C , np.matmul(A_T , A))
     return dUn0 + dUn1 + dUn2 + dUn3 + dUn4 + dUn5
 
