@@ -92,13 +92,45 @@ id3 = np.identity(3)
 D_A = np.outer(e[0], e[1])
 D_B = id3/np.sqrt(3)
 D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
+D_polar = np.outer(e[0], e[0])
+
+# Dictionary of phases
+
+O_xz = np.array([[0,0,1],[0,1,0],[-1,0,0]])
+
+inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "beta", "gamma" ]
+
+R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
+              np.array([1, 1, 1/2, 1/2, 1/2]),
+              np.array([1, 1, 1,   1,   1]),
+              np.array([0, 1, 1/3, 1/3, 1/3]),
+              np.array([0, 1, 1/2, 1/2, 1/2]),
+              np.array([0, 1, 0,   1,   1]),
+              np.array([0, 1, 1,   1,   0]),
+              np.array([0, 1, 0,   1,   0])]
+
+R_dict = dict(zip(inert_phases, R_arr_list))
+
+D_dict = { "B"       : id3/np.sqrt(3),
+           "planar"  : (id3 - np.outer(e[0], e[0]))/np.sqrt(2),
+           "polar"   : np.matmul(np.matmul(O_xz, D_polar), np.transpose(O_xz) ), 
+           "alpha"   : np.diag(np.array([1, np.exp(1j*np.pi/3), np.exp(2j*np.pi/3)])/np.sqrt(3)),
+           "bipolar" : np.diag(np.array([1, 1j, 0])/np.sqrt(2)),
+           "A"       : np.matmul(O_xz, D_A),
+           "beta"    : np.matmul(np.outer(e[1], e[0]), O_xz), 
+           "gamma"   : np.outer(e[1], e[1])
+           }
+
 
 # Functions
+def Tc_mK(p):
+    return np.interp(p, p_nodes, Tc_data_mK)
+
 
 def T_mK(t, p):
     """Converts reduced temperature to temperature in mK.
     """
-    return t * np.interp(p, p_nodes, Tc_data_mK)
+    return t * Tc_mK(p)
 
 
 def npart(p):
@@ -135,7 +167,7 @@ def N0(p):
     return npart(p) * 1.5 / (mhe3_kg * mstar_m(p) * vf(p)**2)
 
 def f_scale(p):
-    """Free energy denisty units Joule per nm3 (?).
+    """Free energy density units Joule per nm3 (?).
     """
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
     return (1/3) * N0(p) * (kB * T_mK(1, p) * 1e-3)**2
@@ -189,6 +221,15 @@ def beta_norm_asarray(t, p):
     beta_norm_list = [ beta_norm(t, p, n) for n in range(1,6)]
     return np.array(beta_norm_list)
 
+def beta_phase_norm(t, p, phase):
+    return np.sum( beta_norm_asarray(t, p) * R_dict[phase] )
+
+def f_phase_norm(t, p, phase):
+    return -0.25* alpha_norm(t)**2 /( beta_phase_norm(t, p, phase))
+
+def delta_phase_norm(t, p, phase):
+    return np.sqrt(- alpha_norm(t)/(2 * beta_phase_norm(t, p, phase)))
+
 def beta_A_norm(t, p):    
     """Material parameter for A phase.
     """
@@ -199,10 +240,16 @@ def beta_B_norm(t, p):
     """
     return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/3
 
+
 def beta_planar_norm(t, p):
-    """Material parameter for B phase.
+    """Material parameter for planar phase.
     """
     return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/2
+
+def beta_polar_norm(t, p):
+    """Material parameter for polar phase.
+    """
+    return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))
 
 def f_A_norm(t, p):
     """Normalised free energy density for A phase, in units of (1/3) N(0) (k_B T_c)^2.
@@ -235,7 +282,10 @@ def delta_planar_norm(t, p):
     """
     return  np.sqrt(- alpha_norm(t)/(2 * beta_planar_norm(t, p)))
 
-
+def delta_polar_norm(t, p):
+    """Gap parameter for planar phase, normalised to (2 * pi * kB * Tc)
+    """
+    return  np.sqrt(- alpha_norm(t)/(2 * beta_polar_norm(t, p)))
 
 def t_AB(p):
     """ AB transition temoerature at pressure p, normalised to Tc.
