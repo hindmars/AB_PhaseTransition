@@ -65,7 +65,7 @@ for ind in ind_arr:
     A_init = A_AX[ind]
     v_init = v[ind]
     
-    A, tau = grad_flow(A_init, t, p)
+    A, tau = grad_flow(A_init, t, p, tau_max=50)
     
     # print("A_init", A_init)
     # print("A", A[-1])
