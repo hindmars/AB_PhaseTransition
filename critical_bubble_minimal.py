@@ -64,6 +64,12 @@ import matplotlib.pyplot as plt
 from scipy.optimize import newton_krylov
 import scipy.optimize.nonlin
 
+def get_psi_m(lam_bar):
+    return (3 - np.sqrt(9-8*lam_bar))/(2*lam_bar)
+
+def get_psi_b(lam_bar):
+    return (3 + np.sqrt(9-8*lam_bar))/(2*lam_bar)
+
 
 class quartic_paramset:
     """
@@ -138,52 +144,78 @@ class quartic_paramset:
 
 class quartic_potential:
     """ 
-    Quartic potential class. Creates a quartic potential object with the  
+    Quartic potential class. Creates a quartic potential object with a tuple of   
     three necessary parameters (see v function) 
-    lam - quartic coupling, default 1
-    phi_b - broken phase field value, default 1
-    phi_m - unstable maximum phi value
+    m2 - quadratic parameter (mass sqaured)
+    mu - cubic parameter
+    lam - quartic paramater
+    where
+        V(phi) = V0 + 0.5 * m2 * phi**2 - (1/3)*mu*phi**3 + 0.25*lam*phi**4
     (minumum value of potential is always zero, always an extremum at phi = 0)
+    Stores as class vaiables
+        phi_b - broken phase field value, default 1
+        phi_m - unstable maximum phi value
+
     These values can be supplied by 
-    - phi_m (float) only (lam = 1, phi_b = 1)
-    - tuple of (phi+_m, lam, phi_b) 
     - quartic_paramset object, in which case temperature T must be supplied.
+    - lambda_bar (float) only (lam = 1, phi_b = 1)
+    - phi_m (float) only (lam = 1, phi_b = 1)
     """
     
-    def __init__(self, params, T=None):
-        if isinstance(params, float):
-            self.phi_m = params
-            self.lam = 1.0
-            self.phi_b = 1.0
-        elif isinstance(params, tuple):
-            self.phi_m = params[0]
-            self.lam = params[1]
-            self.phi_b = params[2]
+    def __init__(self, params, T=None, lambda_bar=True):
+        if isinstance(params, tuple):
+            self.m2 = params[0]
+            self.mu = params[1]
+            self.lam = params[2]
+            self.lam_bar = (9/2) * self.m2/self.mu**2
+            self.phi_m = (self.mu/(2*self.lam))*(1 - np.sqrt(1 - (8/9)*self.lam_bar))
+            self.phi_b = (self.mu/(2*self.lam))*(1 + np.sqrt(1 - (8/9)*self.lam_bar))
         elif isinstance(params, quartic_paramset):
+            self.m2 = params.m2(T)
+            self.mu = params.mu(T)
+            self.lam_bar = (9/2) * self.m2/self.mu**2
             self.phi_m = params.phi_m(T)
             self.lam = params.lam
             self.phi_b = params.phi_b(T)
+        elif isinstance(params, float):
+            if lambda_bar:
+                self.phi_m = get_psi_m(params)/get_psi_b(params)
+                self.lam = 1.0
+                self.phi_b = 1.0
+            else:
+                self.phi_m = params
+                self.lam = 1.0
+                self.phi_b = 1.0
+                                
+            self.m2 = self.lam * self.phi_m * self.phi_b
+            self.mu = self.lam * (self.phi_b + self.phi_m) 
+            self.lam_bar = (9/2) * self.m2/self.mu**2
+
         else:
             raise ValueError("quartic_potential.__init__(): input type not recognised")
 
         self.T = T
         self.lam_phi_b_4 = self.lam * self.phi_b**4
         self.x_m = self.phi_m/self.phi_b
+        self.v0 = (1/12) * self.lam * self.phi_b**3 * (self.phi_b - 2*self.phi_m)
 
 
     def v(self, phi):
-        x = phi/self.phi_b
-        return 0.25*self.lam_phi_b_4*(x**2*(x-1)**2  + (1/3)*(1 - 2*self.x_m)*(1 - 3*x**2 + 2*x**3))
+        # x = phi/self.phi_b
+        # return 0.25*self.lam_phi_b_4*(x**2*(x-1)**2  + (1/3)*(1 - 2*self.x_m)*(1 - 3*x**2 + 2*x**3))
+        return self.v0 + 0.5 * self.m2 * phi**2 - (1/3)*self.mu*phi**3 + 0.25*self.lam*phi**4
     
     def v_prime(self, phi):
-        x = phi/self.phi_b
-        return self.lam_phi_b_4*x*(x - self.x_m)*(x-1)
+        # x = phi/self.phi_b
+        # return self.lam_phi_b_4*x*(x - self.x_m)*(x-1)
+        return self.m2 * phi - self.mu*phi**2 + self.lam*phi**3
     
     def v_prime_prime(self,phi):
-        x = phi/self.phi_b
-        return self.lam_phi_b_4*((x - self.x_m)*(x-1) + x*(x-1) + x*(x - self.x_m))
+        # x = phi/self.phi_b
+        # return self.lam_phi_b_4*((x - self.x_m)*(x-1) + x*(x-1) + x*(x - self.x_m))
+        return self.m2 - 2*self.mu*phi + 3*self.lam*phi**2
     
-    def plot_v(self):
+    def plot(self):
         phi = np.linspace(0,1.2*self.phi_b,100)
         fig, ax = plt.subplots()
         ax.plot(phi/self.phi_b, self.v(phi))
@@ -274,7 +306,7 @@ def initial_condition(gr, pot, bub):
     return phi_init
 
 
-def krylov_bubble(param, T=None, gr_pars=(200,20), dim=3, display=False):
+def krylov_bubble(param, T=None, gr_pars=(200,20), dim=3, lambda_bar=True, display=False):
     """
     Apply Krylov solver to find unstable bubble solution. 
     If temperature T not given, assumes param is value of order parameter at maximum, for 
@@ -289,12 +321,11 @@ def krylov_bubble(param, T=None, gr_pars=(200,20), dim=3, display=False):
         phi_b = param.phi_b(T)
         pot = quartic_potential(param, T)
     else:
-        phi_m = param
         phi_b = 1.0
-        pot = quartic_potential(phi_m)
+        pot = quartic_potential(param, lambda_bar=lambda_bar)
         
     
-    print(type(phi_m), phi_m)
+    # print(type(phi_m), phi_m)
     gr = grid_1d(*gr_pars, dim=dim)
     bub = thin_wall_bubble(pot, dim=dim)
     

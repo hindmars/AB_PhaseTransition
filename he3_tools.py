@@ -94,6 +94,11 @@ D_B = id3/np.sqrt(3)
 D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 D_polar = np.outer(e[0], e[0])
 
+# Lowest barrier by exhaustive search
+D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
+ [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
+ [ 0.07959769-0.05774015j,  0.24372012-0.19001106j,  0.04900674-0.0131628j ]])
+
 # Dictionary of phases
 
 O_xz = np.array([[0,0,1],[0,1,0],[-1,0,0]])
@@ -230,6 +235,9 @@ def f_phase_norm(t, p, phase):
 def delta_phase_norm(t, p, phase):
     return np.sqrt(- alpha_norm(t)/(2 * beta_phase_norm(t, p, phase)))
 
+def delta_wc(t):
+    return np.sqrt(- alpha_norm(t)/(2 * beta_const))
+
 def beta_A_norm(t, p):    
     """Material parameter for A phase.
     """
@@ -353,7 +361,7 @@ def U(A, alpha_norm, beta_norm_arr):
     Un3 = bn[2] *  tr( np.matmul(np.matmul(A , A_T) , np.matmul(A_C , A_H) )  )
     Un4 = bn[3] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
     Un5 = bn[4] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
-    return Un0 + Un1 + Un2 + Un3 + Un4 + Un5
+    return (Un0 + Un1 + Un2 + Un3 + Un4 + Un5).real
 
 
 def dU_dA(A, alpha_norm, beta_norm_arr):
@@ -391,3 +399,31 @@ def dU_dA(A, alpha_norm, beta_norm_arr):
     dUn5 = 2 * bn[4] *  np.matmul(A_C , np.matmul(A_T , A))
     return dUn0 + dUn1 + dUn2 + dUn3 + dUn4 + dUn5
 
+
+def line_section(X, D, t, p, scale=None, n=500):
+    
+    if scale is None:
+        scale = delta_wc(t)
+        
+    v = np.linspace(0,1,n)*1.5
+  
+    if isinstance(X, str):
+        delta_X = delta_phase_norm(t, p, X)
+        X = D_dict[X]
+        if isinstance(D, str):
+            D = D_dict[D] - X
+
+    A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
+    U_XD = U(A_XD, (t-1), beta_norm_asarray(t, p) )
+    
+    return v, A_XD, U_XD
+
+def norm(D):
+    dim = D.ndim
+    D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
+    return np.sqrt(tr(np.matmul(D, D_H))).real
+    
+def distance(X, Y):
+    D = X - Y
+    return norm(D)
+    
