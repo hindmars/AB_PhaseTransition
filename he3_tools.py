@@ -206,6 +206,8 @@ def delta_beta_norm_polyfit(p, n):
         return
 
 def alpha_norm(t):
+    """Quadratic material parameter
+    """
     return t - 1
 
 def beta_norm(t, p, n):
@@ -296,7 +298,7 @@ def delta_polar_norm(t, p):
     return  np.sqrt(- alpha_norm(t)/(2 * beta_polar_norm(t, p)))
 
 def t_AB(p):
-    """ AB transition temoerature at pressure p, normalised to Tc.
+    """ AB transition temperature at pressure p, normalised to Tc.
     """
     t_ab_val = (1/3)/ (delta_beta_norm(p,1) + (delta_beta_norm(p,3) - 2*delta_beta_norm(p,4) - 2*delta_beta_norm(p,5))/3) 
     
@@ -308,9 +310,9 @@ def t_AB(p):
     
     return  t_ab_val
 
-
 def mass_B_norm(t, p, JC):
-    
+    """B phase masses for mode with spin parity JC
+    """
     bb = beta_B_norm(t, p)
     
     if JC == "1-":        
@@ -323,9 +325,23 @@ def mass_B_norm(t, p, JC):
     return np.sqrt(m2)        
 
 
-def tr(a):
-    d = a.ndim    
-    return np.trace(a, axis1=d-2,  axis2=d-1 )
+def tr(A):
+    """
+    Take trace of order paraeeter array on last two indices
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    d = A.ndim    
+    return np.trace(A, axis1=d-2,  axis2=d-1 )
 
 
 def U(A, alpha_norm, beta_norm_arr):
@@ -334,7 +350,7 @@ def U(A, alpha_norm, beta_norm_arr):
 
     Parameters
     ----------
-    A : ndarray
+    A : ndarray dtype complex, shape (m,n,...,3,3)
         order parameter.
     alpha_norm : float
         alpha parameter, normalised.
@@ -370,12 +386,12 @@ def dU_dA(A, alpha_norm, beta_norm_arr):
 
     Parameters
     ----------
-    A : ndarray
+    A : ndarray dtype complex, shape (m,n,...3,3)
         order parameter.
     alpha_norm : float
-        alpha parameter, normalised.
+        alpha material parameter, dimensionless.
     beta_norm_arr : ndarray, shape (5,1)
-        beta parameters, normalised.
+        beta material parameters, dimensionless.
 
     Returns
     -------
@@ -401,11 +417,40 @@ def dU_dA(A, alpha_norm, beta_norm_arr):
 
 
 def line_section(X, D, t, p, scale=None, n=500):
-    
+    """
+    Retuens a line section in order parameter space, along with the free energy 
+    along it, and the parameter of the line.
+
+    Parameters
+    ----------
+    X : string or Complex array shape (3,3)
+        Start point of line. If a string, specifies the inert phase.
+    D : string or Complex array shape (3,3)
+        If a string, the end point inert phase. If array, the direction of the line
+    t : float
+        Reduced temperature in terms of Tc(p).
+    p : float
+        Pressure in bar.
+    scale : float, optional
+        Multiplies direction matrix. The default is None, in which case the 
+        scale is the weak coupling gap scale delta_wc(t).
+    n : integer, optional
+        Number of points on the line. The default is 500.
+
+    Returns
+    -------
+    v : numpy.ndarray shape (n,)
+        Line parameter, between 0 and v_max=1.5.
+    A_XD : Complex array shape (n,3,3)
+        Order parameter along line.
+    U_XD : float array shape (n,)
+        Free energy along line.
+
+    """
     if scale is None:
         scale = delta_wc(t)
-        
-    v = np.linspace(0,1,n)*1.5
+    v_max = 1.5
+    v = np.linspace(0,1,n)*v_max
   
     if isinstance(X, str):
         delta_X = delta_phase_norm(t, p, X)
@@ -419,11 +464,113 @@ def line_section(X, D, t, p, scale=None, n=500):
     return v, A_XD, U_XD
 
 def norm(D):
+    """
+    Norm of complex square array D
+
+    Parameters
+    ----------
+    D : Complex array shape 
+        Order parameter array.
+
+    Returns
+    -------
+    float
+        Norm of array, $\sqrt{tr(D D^\dagger)}$.
+
+    """
     dim = D.ndim
     D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
     return np.sqrt(tr(np.matmul(D, D_H))).real
-    
+
+
+def inner(X, Y):
+    """
+    Inner product of complex square arrays X, Y
+
+    Parameters
+    ----------
+    X,Y : Complex array shape 
+        Order parameter array.
+
+    Returns
+    -------
+    float, dtype complex
+        Inner product.
+
+    """
+    dim = Y.ndim
+    # X_H = np.conj(np.swapaxes(Y, dim-2, dim-1))
+    Y_H = np.conj(np.swapaxes(Y, dim-2, dim-1))
+    return (tr(np.matmul(X, Y_H))).real
+
+
 def distance(X, Y):
+    """
+    Distance between (3,3) complex arrays defined by norm.    
+
+    Parameters
+    ----------
+    X : Complex array shape (3,3)
+        Order parameter array.
+    Y : Complex array shape (3,3)
+        Order parameter array.
+
+    Returns
+    -------
+    float
+        Distance between X and Y.
+
+    """
     D = X - Y
     return norm(D)
-    
+
+
+def project(X, Y):
+    """
+    Projects X onto Y, X, Y (3,3) complex arrays.
+    X - (X,Y) Y/(Y,Y)
+       
+
+    Parameters
+    ----------
+    X : Complex array shape (3,3)
+        Order parameter array.
+    Y : Complex array shape (3,3)
+        Order parameter array.
+
+    Returns
+    -------
+    float
+        X projected onto Y.
+
+    """
+
+    return X -  np.multiply.outer(inner(X,Y)/inner(Y,Y), Y )
+
+
+def lengths(X, Y):
+    """
+    Length of X along Y and orthoginal to Y
+    Projects X onto Y, X, Y (3,3) complex arrays.
+    X - (X,Y) Y/(Y,Y)
+       
+
+    Parameters
+    ----------
+    X : Complex array shape (n,m,..3,3)
+        Order parameter array.
+    Y : Complex array shape (3,3)
+        Order parameter array.
+
+    Returns
+    -------
+    float
+        X projected onto Y.
+
+    """
+    print((inner(X,Y)/inner(Y,Y)).shape)
+    print(Y.shape)
+    X_Y = X - np.multiply.outer(inner(X,Y)/inner(Y,Y), Y ) 
+
+    return np.array([norm(X_Y), norm(X - X_Y)]).T
+
