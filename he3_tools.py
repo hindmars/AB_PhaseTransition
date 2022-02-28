@@ -8,6 +8,7 @@ Created on Fri Sep 10 15:04:39 2021
 
 import numpy as np
 import scipy.special as sp
+import scipy.linalg as sl
 
 import scipy.constants as c
 
@@ -157,7 +158,7 @@ def vf(p):
 
 
 def xi0(p):
-    """Zero T Cooper pair correlation length at pressure p.
+    """Zero T Cooper pair correlation length at pressure p (nm).
     """
     return np.interp(p, p_nodes, xi0_data)
 
@@ -227,6 +228,14 @@ def beta_norm(t, p, n):
 def beta_norm_asarray(t, p):
     beta_norm_list = [ beta_norm(t, p, n) for n in range(1,6)]
     return np.array(beta_norm_list)
+
+def mat_pars(t,p):
+    """All 6 bulk material parameters
+    """
+    pars = np.zeros((6,))
+    pars[0] = alpha_norm(t)
+    pars[1:] = beta_norm_asarray(t, p)
+    return pars
 
 def beta_phase_norm(t, p, phase):
     return np.sum( beta_norm_asarray(t, p) * R_dict[phase] )
@@ -327,7 +336,7 @@ def mass_B_norm(t, p, JC):
 
 def tr(A):
     """
-    Take trace of order paraeeter array on last two indices
+    Trace of order paraeeter array on last two indices
 
     Parameters
     ----------
@@ -344,7 +353,133 @@ def tr(A):
     return np.trace(A, axis1=d-2,  axis2=d-1 )
 
 
-def U(A, alpha_norm, beta_norm_arr):
+def trans(A):
+    """
+    Transpose of order paraeeter array on last two indices
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    d = A.ndim    
+    return np.swapaxes(A, d-2,  d-1 )
+
+
+def hconj(A):
+    """
+    Hermitian conjugate of order paraeeter array on last two indices
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    return trans(A).conj()
+
+
+def mult_hconj(A):
+    """
+    Multiplies A by its Hermitian conjugate on last two indices
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    ndarray
+        Same shape as input array.
+
+    """
+    return np.matmul(A, hconj(A))
+
+def mult_trans(A):
+    """
+    Multiplies A by its transpose on last two indices
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    ndarray
+        Same shape as input array.
+
+    """
+    return np.matmul(A, trans(A))
+
+def mat2vec(A):
+    sz = A.size 
+    return A.reshape(sz)
+
+def vec2mat(Av):
+    sz = Av.size 
+    return Av.reshape((sz//9, 3, 3))
+
+
+def eig_vals(A):
+    """
+    Multiplies A by its Hermitian conjugate on last two indices
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    ndarray
+        shape (m,n,...,3).
+
+    """
+    A_dim = A.ndim
+    A_shape = A.shape
+    A_size = A.size
+    A_flatter = A.reshape(A_size//9, 3, 3)
+    e_vals = np.zeros((A_size//9, 3), dtype=complex)
+    for n, A_el in enumerate(A_flatter):
+        e_vals[n,:] = sl.eigvals(A_el)
+    return e_vals.reshape(A_shape[0:A_dim-2] + (3,))
+
+
+def args_parse(*args):
+    n_el = len(args)
+    if n_el == 2:
+        if isinstance(args[1], np.ndarray):
+            t = None
+            p = None
+            al = args[0]
+            bn = args[1]
+        else:
+            t, p = args
+            al = alpha_norm(t)
+            bn = beta_norm_asarray(t, p)
+    else:
+        t = None
+        p = None
+        al = args[0][0]
+        bn = args[0][1:]
+    return al, bn, t, p
+
+
+# def U(A, alpha_norm, beta_norm_arr):
+def U(A, *args):
     """
     Bulk free energy for superfluid He3
 
@@ -363,14 +498,15 @@ def U(A, alpha_norm, beta_norm_arr):
         Normalised bulk free energy.
 
     """
-    bn = beta_norm_arr
+    al, bn, _, _ = args_parse(*args)
+
     dim = A.ndim
     
     A_T = np.swapaxes(A, dim-2, dim-1)
     A_C = np.conj(A)
     A_H = np.conj(A_T)
 
-    Un0 = alpha_norm * tr( np.matmul(A , A_H) )
+    Un0 = al * tr( np.matmul(A , A_H) )
     
     Un1 = bn[0] *  tr( np.matmul(A , A_T)) * tr(np.matmul(A_C , A_H) ) 
     Un2 = bn[1] *  tr( np.matmul(A , A_H) )**2
@@ -380,7 +516,7 @@ def U(A, alpha_norm, beta_norm_arr):
     return (Un0 + Un1 + Un2 + Un3 + Un4 + Un5).real
 
 
-def dU_dA(A, alpha_norm, beta_norm_arr):
+def dU_dA(A, *args):
     """
     Derivative of bulk free energy for superfluid He3.')
 
@@ -399,14 +535,15 @@ def dU_dA(A, alpha_norm, beta_norm_arr):
         Normalised derivative of bulk free energy.
 
     """
-    bn = beta_norm_arr
+    al, bn, _, _ = args_parse(*args)
+
     dim = A.ndim
     
     A_T = np.swapaxes(A, dim-2, dim-1)
     A_C = np.conj(A)
     A_H = np.conj(A_T)
 
-    dUn0 = alpha_norm * A
+    dUn0 = al * A
         
     dUn1 = 2 * bn[0] *  np.matmul(np.multiply.outer(tr( np.matmul(A , A_T)), id3 ) , A_C)
     dUn2 = 2 * bn[1] *  np.matmul(np.multiply.outer(tr( np.matmul(A , A_H)), id3 ) , A )
@@ -457,15 +594,16 @@ def line_section(X, D, t, p, scale=None, n=500):
         X = D_dict[X]
         if isinstance(D, str):
             D = D_dict[D] - X
+            D = D/norm(D)
 
     A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
     U_XD = U(A_XD, (t-1), beta_norm_asarray(t, p) )
     
     return v, A_XD, U_XD
 
-def norm(D):
+def norm(D, n=1):
     """
-    Norm of complex square array D
+    n-Norm of complex square array D, defined as $tr(D D^\dagger)^{n/2}$
 
     Parameters
     ----------
@@ -475,12 +613,16 @@ def norm(D):
     Returns
     -------
     float
-        Norm of array, $\sqrt{tr(D D^\dagger)}$.
+        n-Norm of array.
 
     """
-    dim = D.ndim
-    D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
-    return np.sqrt(tr(np.matmul(D, D_H))).real
+    # D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
+    D_H = hconj(D)
+    norm2 = tr(np.matmul(D, D_H)).real
+    if n == 1:
+        return norm2
+    else:
+        return norm2**(n/2)
 
 
 def inner(X, Y):
