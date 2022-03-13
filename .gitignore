@@ -10,6 +10,7 @@
 *.txt
 *.~*
 *.*~
+*.csv
 
 # ignore the executable of c++
 *.app 
