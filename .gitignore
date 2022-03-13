@@ -1,0 +1,18 @@
+# ignore following type files
+*.py~
+*.pdf
+*.png
+*.out
+*.pdf~
+*.npz
+*.npy
+*.xlsx
+*.txt
+*.~*
+*.*~
+
+# ignore the executable of c++
+*.app 
+
+# ignore the folders
+*/
