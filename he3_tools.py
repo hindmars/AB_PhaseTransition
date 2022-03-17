@@ -15,6 +15,9 @@ import scipy.constants as c
 
 cphy = c.physical_constants
 
+DEFAULT_T_SCALE="Greywall" 
+# DEFAULT_T_SCALE="PLTS" 
+
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
@@ -62,12 +65,31 @@ vf_data = [59.03, 55.41, 52.36, 49.77, 47.56, 45.66, 44.00, 42.51, 41.17, 39.92,
 xi0_data = [77.21, 57.04, 45.85, 38.77, 33.91, 30.37, 27.66, 25.51, 23.76, 22.29, 21.03, 
        19.94, 18.99, 18.15, 17.41, 16.77, 16.22, 15.76]
 
-
-# For polynomial fit method
+# For polynomial fit method Tc
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 2
 # Doesn't work at the moment, some unit miunserstanding or misprint?
-a1 = [9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
+a1 = [-9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
 a_list = [a1[::-1]] # polyfit wants highest power first
+# b1_poly = np.polynomial.Polynomial(a1)
+
+
+
+
+
+# From Greywall 1986
+T_pcp_mK = 2.273
+p_pcp_bar = 21.22
+# Greywall 1986 TAB polynomial fit
+a_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
+T_AB_poly_Greywall = np.polynomial.Polynomial(a_G)
+
+
+# For polynomial method for Tc and T_AB, from Parpia et al 2022, PLTS
+d_c = np.array([0.90972399274531, 0.14037182852625, -0.0074017331747577, 2.8617547367067e-4,-6.5064429600510e-6, 6.0754459040296e-8])
+c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.013325635880953, -2.3510107585468e-4, 1.6519539175010e-6])
+
+Tc_poly_PLTS = np.polynomial.Polynomial(d_c)
+TAB_poly_PLTS = np.polynomial.Polynomial(c_AB)
 
 
 zeta3 = sp.zeta(3)
@@ -129,14 +151,16 @@ D_dict = { "B"       : id3/np.sqrt(3),
 
 
 # Functions
-def Tc_mK(p):
-    return np.interp(p, p_nodes, Tc_data_mK)
+def Tc_mK(p, scale=DEFAULT_T_SCALE):
+    if scale == "PLTS":
+        return Tc_poly_PLTS(p)
+    else:
+        return np.interp(p, p_nodes, Tc_data_mK)
 
-
-def T_mK(t, p):
+def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
     """
-    return t * Tc_mK(p)
+    return t * Tc_mK(p, scale)
 
 
 def npart(p):
@@ -173,7 +197,7 @@ def N0(p):
     return npart(p) * 1.5 / (mhe3_kg * mstar_m(p) * vf(p)**2)
 
 def f_scale(p):
-    """Free energy density units Joule per nm3 (?).
+    """Free energy density units Joule per nm3 .
     """
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
     return (1/3) * N0(p) * (kB * T_mK(1, p) * 1e-3)**2
