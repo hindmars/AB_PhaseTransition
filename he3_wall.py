@@ -221,10 +221,15 @@ def field_eqn(phi, pot, gr):
     return np.matmul(Kxx, second + first) - pot.v_prime(phi)
 
 
-def initial_condition(gr, pot, bub):
+
+def initial_condition(pot, gr, D=None):
     """
     Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub
     """
+    
+    bub = thin_wall_bubble(pot, dim=gr.dim)
+    
+
     m2 = 1/pot.mat_pars.xi()
     k = np.sqrt(m2/4)
 
@@ -234,12 +239,19 @@ def initial_condition(gr, pot, bub):
 
     phi_init = 0.25*(1 - np.tanh(k*(gr.x - rb)))*(1 + np.tanh(k*(gr.x + rb )))  
 
-    D = h.D_dict["A"] - h.D_dict["B"]
+
+    if D is None:
+        D = pot.mat_pars.delta_A_norm()*h.D_dict["A"] - pot.mat_pars.delta_B_norm()*h.D_dict["B"]
     # D = D/h.norm(D)
 
-    A_init = h.D_dict["B"] * pot.mat_pars.delta_A_norm() \
-        + np.multiply.outer(phi_init , D ) * pot.mat_pars.delta_B_norm()
-
+    if gr.dim == 1:
+        A_init = h.D_dict["B"] * pot.mat_pars.delta_B_norm() \
+            + np.multiply.outer(phi_init , D ) 
+    else:
+        A_init = h.D_dict["A"] * pot.mat_pars.delta_A_norm() \
+            - np.multiply.outer(phi_init , D ) 
+        
+        
     return A_init
 
 
@@ -257,15 +269,19 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False):
     pot = quartic_potential(*args)
     
     gr = grid_1d(*gr_pars, dim=dim)
-    bub = thin_wall_bubble(pot, dim=dim)
+
+    # bub = thin_wall_bubble(pot, dim=dim)
     
-    phi_init = initial_condition(gr, pot, bub)
+    phi_init = initial_condition(pot, gr)
+
     
     def field_eqn_fix(phi):
         return field_eqn(phi, pot, gr)
 
     try:
-        phi = newton_krylov(field_eqn_fix, phi_init, maxiter=100)
+
+        phi = newton_krylov(field_eqn_fix, phi_init, verbose=True, maxiter=200)
+
     except scipy.optimize.nonlin.NoConvergence as e:
         phi = e.args[0]
         print('No Convergence')
@@ -283,7 +299,9 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False):
 
     return phi, pot, gr 
 
-def relax(tspan, *args, gr_pars=(200,20), dim=1):
+
+def relax(t_eval, *args, gr_pars=(200,20), dim=1):
+
     """
     Apply relaxation method to find domain wall solution. 
     
@@ -294,18 +312,24 @@ def relax(tspan, *args, gr_pars=(200,20), dim=1):
     pot = quartic_potential(*args)
     
     gr = grid_1d(*gr_pars, dim=dim)
-    bub = thin_wall_bubble(pot, dim=dim)
+
+    # bub = thin_wall_bubble(pot, dim=dim)
     
-    phi_init = initial_condition(gr, pot, bub)
+    phi_init = initial_condition(pot, gr)
+
     
     def field_eqn_vec(tau, phi_vec):
         force_mat = field_eqn(h.vec2mat(phi_vec), pot, gr)
         return h.mat2vec(force_mat)
 
-    sol = solve_ivp(field_eqn_vec, tspan, h.mat2vec(phi_init), t_eval=tspan)
 
-    Asol = sol.y[:,-1]
-    return Asol.reshape(Asol.size//9, 3, 3), pot, gr 
+    tspan = [min(t_eval), max(t_eval)]
+    sol = solve_ivp(field_eqn_vec, tspan, h.mat2vec(phi_init), t_eval=t_eval)
+
+    Asol = sol.y
+    print(Asol.shape)
+    return Asol.reshape(gr.n, 3, 3, len(t_eval)), pot, gr 
+
 
 def energy_density(phi, pot, gr):
     phi_plus = np.roll(phi,-1, axis=0)
