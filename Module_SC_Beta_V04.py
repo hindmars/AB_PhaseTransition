@@ -128,12 +128,18 @@ def xi0p(p):
    
    BetaObject.xi0_function(SC.P,SC.XI0,p); return (BetaObject.xi0)*nm
 
-# xiGL(p,T)
-def xiGL(p, T):
+# xiGL(p,T) from JWS PRB, there is wired " 20 " 
+def xiGL_JWS(p, T):
    # p,T dependent GL coherent length, nanometer
-    zeta3 = 1.2020569; xiGL = xi0p(p)*(math.sqrt((7.*zeta3)/20.));
+    zeta3 = 1.2020569031595942854; xiGL = xi0p(p)*(math.sqrt((7.*zeta3)/20.));
     return xiGL/(math.sqrt(1.-T/Tcp(p)))
-
+ 
+# xiGL(p, T) from Sauls Mithushima paper and Osheoff Cross 1977 PRL about mesument of surface tension
+def xiGL_OC(p, T):
+   # p,T dependent GL coherent length, nanometer
+    zeta3 = 1.2020569031595942854; xiGL = xi0p(p)*(math.sqrt((7.*zeta3)/12.));
+    return xiGL/(math.sqrt(1.-T/Tcp(p)))
+ 
 # N(0)
 def N0(p):
    J = 1; s = 1;hbar = 1.054571817*(10**(-34))*J*s
