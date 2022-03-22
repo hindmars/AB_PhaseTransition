@@ -18,33 +18,66 @@ cphy = c.physical_constants
 DEFAULT_T_SCALE="Greywall" 
 # DEFAULT_T_SCALE="PLTS" 
 
+# DEFAULT_SC_CORRS="Choi"
+# DEFAULT_SC_CORRS="WS15"
+if "DEFAULT_SC_CORRS" not in globals():
+    DEFAULT_SC_CORRS="RWS19"
+# DEFAULT_SC_CORRS="Wiman-thesis"
+
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
+# make these a Dictionary
+
+def get_interp_data_rws19():
+    p_nodes_beta = range(0, 36, 2)
+    
+    c1 = [-0.0098, -0.0127, -0.0155, -0.0181, -0.0207, -0.0231, -0.0254, -0.0275,
+          -0.0295, -0.0314, -0.0330, -0.0345, -0.0358, -0.0370, -0.0381, -0.0391, 
+          -0.0402, -0.0413]
+    
+    c2 = [-0.0419, -0.0490, -0.0562, -0.0636, -0.0711, -0.0786, -0.0861, -0.0936, 
+          -0.1011, -0.1086, -0.1160, -0.1233, -0.1306, -0.1378, -0.1448, -0.1517, 
+          -0.1583, -0.1645]
+    
+    c3 = [-0.0132, -0.0161, -0.0184, -0.0202, -0.0216, -0.0226, -0.0233, -0.0239, 
+          -0.0243, -0.0247, -0.0249, -0.0252, -0.0255, -0.0258, -0.0262, -0.0265, 
+          -0.0267, -0.0268]
+    
+    c4 = [-0.0047, -0.0276, -0.0514, -0.0760, -0.1010, -0.1260, -0.1508, -0.1751, 
+          -0.1985, -0.2208, -0.2419, -0.2614, -0.2795, -0.2961, -0.3114, -0.3255, 
+          -0.3388, -0.3518]
+    
+    c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660, 
+          -0.2801, -0.2930, -0.3051, -0.3167, -0.3280, -0.3392, -0.3502, -0.3611, 
+          -0.3717, -0.3815]
+
+    c_list = [c1, c2, c3, c4, c5]
+
+    return [p_nodes_beta, c_list]
+
+def get_interp_data_wiman_thesis():
+    p_nodes_beta = [ 0.,  5., 10., 15., 20., 25., 30., 34.]
+    c1 = [-0.00483092, -0.01056763, -0.01630435, -0.02022947, -0.02566425, -0.0298913,
+    -0.03351449, -0.03518519]
+    c2 = [-0.02415459, -0.06400966, -0.09269324, -0.12137681, -0.13556763, -0.15428744,
+    -0.16817633, -0.17648953]
+    c3 = [-0.01570048, -0.02566425, -0.03230676, -0.04166667, -0.04045894, -0.0419686,
+    -0.04257246, -0.04122383]
+    c4 = [-0.02536232, -0.05042271, -0.07729469, -0.10929952, -0.13979469, -0.18055556,
+    -0.23309179, -0.281562  ]
+    c5 = [-0.07850242, -0.19897343, -0.28683575, -0.34752415, -0.40247585, -0.43387681,
+    -0.44655797, -0.44219002]
+    
+    c_list = [c1, c2, c3, c4, c5]
+
+    return [p_nodes_beta, c_list]
+
+
+dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
+                "Wiman_thesis" : get_interp_data_wiman_thesis()}
+
 p_nodes = range(0, 36, 2)
-
-c1 = [-0.0098, -0.0127, -0.0155, -0.0181, -0.0207, -0.0231, -0.0254, -0.0275,
-      -0.0295, -0.0314, -0.0330, -0.0345, -0.0358, -0.0370, -0.0381, -0.0391, 
-      -0.0402, -0.0413]
-
-c2 = [-0.0419, -0.0490, -0.0562, -0.0636, -0.0711, -0.0786, -0.0861, -0.0936, 
-      -0.1011, -0.1086, -0.1160, -0.1233, -0.1306, -0.1378, -0.1448, -0.1517, 
-      -0.1583, -0.1645]
-
-c3 = [-0.0132, -0.0161, -0.0184, -0.0202, -0.0216, -0.0226, -0.0233, -0.0239, 
-      -0.0243, -0.0247, -0.0249, -0.0252, -0.0255, -0.0258, -0.0262, -0.0265, 
-      -0.0267, -0.0268]
-
-c4 = [-0.0047, -0.0276, -0.0514, -0.0760, -0.1010, -0.1260, -0.1508, -0.1751, 
-      -0.1985, -0.2208, -0.2419, -0.2614, -0.2795, -0.2961, -0.3114, -0.3255, 
-      -0.3388, -0.3518]
-
-c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660, 
-      -0.2801, -0.2930, -0.3051, -0.3167, -0.3280, -0.3392, -0.3502, -0.3611, 
-      -0.3717, -0.3815]
-
-c_list = [c1, c2, c3, c4, c5]
-
 
 Tc_data_mK = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 
       2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.48]
@@ -80,8 +113,10 @@ a_list = [a1[::-1]] # polyfit wants highest power first
 T_pcp_mK = 2.273
 p_pcp_bar = 21.22
 # Greywall 1986 TAB polynomial fit
-a_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
-T_AB_poly_Greywall = np.polynomial.Polynomial(a_G)
+aTAB_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
+aTc_G = [0.92938375, 0.13867188, -0.69302185e-2, 0.25685169e-3, -0.57248644e-5, 0.5301091e-7]
+TAB_poly_Greywall = np.polynomial.Polynomial(aTAB_G)
+Tc_poly_Greywall = np.polynomial.Polynomial(aTc_G)
 
 
 # For polynomial method for Tc and T_AB, from Parpia et al 2022, PLTS
@@ -208,17 +243,19 @@ def delta_beta_norm(p, n, method="interp"):
     """
     if method == "interp":
         return delta_beta_norm_interp(p, n)
-    elif method == "polyfit":
-        return delta_beta_norm_polyfit(p, n)
+    # elif method == "polyfit":
+    #     return delta_beta_norm_polyfit(p, n)
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
         
     return
 
-def delta_beta_norm_interp(p, n): 
-    """Interpolation method.
+def delta_beta_norm_interp(p, n,): 
+    """Interpolation method. Choose data source
     """
-    return np.interp(p, p_nodes, c_list[n-1])
+    p_nodes_beta = dbeta_data_dict[DEFAULT_SC_CORRS][0]
+    c_list = dbeta_data_dict[DEFAULT_SC_CORRS][1]
+    return np.interp(p, p_nodes_beta, c_list[n-1])
 
 
 def delta_beta_norm_polyfit(p, n): 
