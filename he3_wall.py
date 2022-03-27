@@ -3,7 +3,7 @@
 """
 Created on Thu Jun  3 15:20:44 2021
 
-@author: hindmars
+@author: hindmars; modified by timohyva@github
 """
 
 """
@@ -11,7 +11,7 @@ Simple routines for finding the critical bubble in He3 potential.
 Uses newton-krylov solver.
 
 Default potential is scaled so that: 
-    stable (broken) phase has order parameter phi = 1, 
+    stable (broken) phase has order parameter phi = 1 i.e., true vacuum (superfluid B-Phase)
     stable (broken) phase has potential = 0
     potential grows phi**4/4
 
@@ -259,7 +259,10 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False):
     """
     Apply Krylov solver to find unstable bubble solution. 
     
-    Returns: order parameter phi, the potential object, and the grid object.
+    Returns: order parameter phi, the potential object, and the grid object.ry 
+
+    This function is very hard to converge when pressure less than 21 bar (close to PCP), 
+    and it sin't Tempreture dependent.
     """
     
 
@@ -280,7 +283,7 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False):
 
     try:
 
-        phi = newton_krylov(field_eqn_fix, phi_init, verbose=True, maxiter=200)
+        phi = newton_krylov(field_eqn_fix, phi_init, verbose=True, maxiter=1000) # increasing default interation to 1000 from 200
 
     except scipy.optimize.nonlin.NoConvergence as e:
         phi = e.args[0]
