@@ -185,7 +185,8 @@ def Tc_mK(p, scale=DEFAULT_T_SCALE):
     if scale == "PLTS":
         return Tc_poly_PLTS(p)
     else:
-        return np.interp(p, p_nodes, Tc_data_mK)
+        # return np.interp(p, p_nodes, Tc_data_mK)
+        return np.interp(p, P_rws, Tc_data_mK)
 
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
@@ -197,25 +198,29 @@ def T_mK(t, p, scale=DEFAULT_T_SCALE):
 def npart(p):
     """Particle density at pressure p.
     """
-    return np.interp(p, p_nodes, np_data)
+    # return np.interp(p, p_nodes, np_data)
+    return np.interp(p, P_rws, np_data)
 
 
 def mstar_m(p):
     """Effective mass ratio at pressure p.
     """
-    return np.interp(p, p_nodes, mstar_m_data)
+    # return np.interp(p, p_nodes, mstar_m_data)
+    return np.interp(p, P_rws, mstar_m_data)
 
 
 def vf(p):
     """Fermi velocity at pressure p.
     """
-    return np.interp(p, p_nodes, vf_data)
+    # return np.interp(p, p_nodes, vf_data)
+    return np.interp(p, P_rws, vf_data)
 
 
 def xi0(p):
     """Zero T Cooper pair correlation length at pressure p (nm).
     """
-    return np.interp(p, p_nodes, xi0_data)
+    # return np.interp(p, p_nodes, xi0_data)
+    return np.interp(p, P_rws, xi0_data)
 
 def xi(t, p):
     """Ginzburg Landau correlation length at pressure p.
@@ -388,7 +393,7 @@ def delta_polar_norm(t, p):
 def t_AB(p):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p,1) + (delta_beta_norm(p,3) - 2*delta_beta_norm(p,4) - 2*delta_beta_norm(p,5))/3) 
+    t_ab_val = (1/3)/ (delta_beta_norm(p,1)[0] + (delta_beta_norm(p,3)[0] - 2*delta_beta_norm(p,4)[0] - 2*delta_beta_norm(p,5)[0])/3) 
     
     if isinstance(t_ab_val, np.ndarray):
         t_ab_val[t_ab_val > 1] = np.nan
