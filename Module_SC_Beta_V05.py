@@ -152,7 +152,7 @@ def xiGL_OC_Parpia(p, Tcp, t):
    xi0p = (hbar * vF(p))/(2.* pi * kb * Tcp)
    
    xiGL = xi0p*(math.sqrt((7.*zeta3)/12.));
-   return xiGL/(math.sqrt(1. - t)), xi0p
+   return xiGL/(math.sqrt(1. - t)), xi0p*(10**(9))
 
 ################################################################################
  
@@ -214,3 +214,53 @@ def betaA_td(p, T): return beta2_td(p, T) + beta4_td(p, T) + beta5_td(p, T)
 def betaB_td(p, T):
     return (beta1_td(p, T) + beta2_td(p, T)
             + (1./3.)*(beta3_td(p, T) + beta4_td(p, T) + beta5_td(p, T)))
+
+
+ 
+
+########################################################################
+########################################################################
+##
+#   \tilde{\alpha}, \tilde{\beta}_{i} with Parpia Tc TAB
+#                                 
+
+# dimensionless alpha i,e., \tilde{\alpha}
+def alpha_td_Parpia(p, t): return (t - 1.) 
+
+                                                                                      
+# dimensionless beta_1 i.e., \tilde{\beta}_1
+def beta1_td_Parpia(p, t):
+   BetaObject.c1_function(SC.P,SC.c1,p); return -1. + t*BetaObject.c1p
+
+# dimensionless beta_2 i.e., \tilde{\beta}_2 
+def beta2_td_Parpia(p, t):
+    BetaObject.c2_function(SC.P,SC.c2,p); return 2. + t*BetaObject.c2p
+
+# dimensionless beta_3 i.e., \tilde{\beta}_3
+def beta3_td_Parpia(p, t):
+   BetaObject.c3_function(SC.P,SC.c3,p); return  2. + t*BetaObject.c3p
+
+# dimensionless beta_4 i.e., \tilde{\beta}_4
+def beta4_td_Parpia(p, t):
+   BetaObject.c4_function(SC.P,SC.c4,p); return 2. + t*BetaObject.c4p
+
+# dimensionless beta_5 i.e., \tilde{\beta}_5
+def beta5_td_Parpia(p, t):
+   BetaObject.c5_function(SC.P,SC.c5,p); return -2. + t*BetaObject.c5p
+
+
+
+########################################################################   
+##
+#  \tilde{\beta}_{A}, \tilde{\beta}_{B} with Parpia Tc TAB
+#                                
+
+# \beta_A                                 
+def betaA_td_Parpia(p, t): return beta2_td_Parpia(p, t) + beta4_td_Parpia(p, t) + beta5_td_Parpia(p, t)
+
+# \beta_B                                 
+def betaB_td_Parpia(p, t):
+    return (beta1_td_Parpia(p, t) + beta2_td_Parpia(p, t)
+            + (1./3.)*(beta3_td_Parpia(p, t) + beta4_td_Parpia(p, t) + beta5_td_Parpia(p, t)))
+
+
