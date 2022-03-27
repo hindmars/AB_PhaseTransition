@@ -3,7 +3,7 @@
 """
 Created on Fri Sep 10 15:04:39 2021
 
-@author: hindmars
+@author: hindmars; updated by timohyva@github
 """
 
 import numpy as np
@@ -23,7 +23,7 @@ DEFAULT_T_SCALE="Greywall"
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
-p_nodes = range(0, 36, 2)
+P_rws = range(0, 36, 2)
 
 c1 = [-0.0098, -0.0127, -0.0155, -0.0181, -0.0207, -0.0231, -0.0254, -0.0275,
       -0.0295, -0.0314, -0.0330, -0.0345, -0.0358, -0.0370, -0.0381, -0.0391, 
@@ -45,7 +45,7 @@ c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660,
       -0.2801, -0.2930, -0.3051, -0.3167, -0.3280, -0.3392, -0.3502, -0.3611, 
       -0.3717, -0.3815]
 
-c_list = [c1, c2, c3, c4, c5]
+c_rws_list = [c1, c2, c3, c4, c5]
 
 
 Tc_data_mK = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 
@@ -74,9 +74,35 @@ a1 = [-9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
 a_list = [a1[::-1]] # polyfit wants highest power first
 # b1_poly = np.polynomial.Polynomial(a1)
 
+#############################################################
+##''' For method of linear interpolation
+#'    From H. Choi, J. P. Davis, J. Pollanen, T. M. Haard, and W. P. Halperin, Phy. Rew. B 75, 174503; Table II
 
+P_choi = range(0, 35, 1)
 
+c1_choi = [-0.97, -0.97, -0.97, -0.98, -0.98, -0.98, -0.98, -0.98, -0.98, -0.99, -0.99, -0.99, -0.99, -0.99,
+           -1.00, -1.00, -1.00, -1.00, -1.00, -1.00, -1.01, -1.01, -1.01, -1.01, -1.01, -1.01, -1.02, -1.02,
+           -1.02,  -1.02, -1.02, -1.03, -1.03, -1.03, -1.03]
 
+c2_choi = [1.89, 1.94, 1.96, 1.99, 1.99, 1.99, 1.99, 1.98, 1.98, 1.98, 1.97, 1.97, 1.96, 1.95, 1.95, 1.95, 1.95,
+           1.94,1.94, 1.93, 1.94, 1.94, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93,
+           1.93]
+ 
+c3_choi = [2.10, 1.96, 1.86, 1.81, 1.76, 1.74, 1.72, 1.70, 1.70, 1.69, 1.69, 1.70, 1.69, 1.69, 1.70, 1.72, 1.73, 1.72,
+           1.73, 1.72, 1.74, 1.74, 1.74, 1.74, 1.74, 1.74, 1.73, 1.74, 1.73, 1.73, 1.72, 1.73, 1.73, 1.73,
+           1.73]
+
+c4_choi = [1.85, 1.72, 1.63, 1.56, 1.52, 1.48, 1.46, 1.44, 1.42, 1.41, 1.40, 1.39, 1.39, 1.39, 1.38, 1.35, 1.34,
+           1.33,1.32, 1.33, 1.31, 1.29, 1.29, 1.29, 1.28, 1.28, 1.27, 1.26, 1.26, 1.26, 1.26, 1.25, 1.25, 1.25,
+           1.25]
+
+c5_choi = [-1.84, -1.82, -1.81, -1.81, -1.81, -1.81, -1.82, -1.82, -1.83, -1.84, -1.85, -1.86, -1.87, -1.88, -1.89, -1.89, -1.90,
+           -1.90, -1.91, -1.92, -1.93, -1.93, -1.94, -1.95, -1.96, -1.97, -1.97, -1.98, -1.99, -2.00, -2.01, -2.02, -2.02, -2.03,
+           -2.03]
+
+c_choi_list = [c1, c2, c3, c4, c5]
+
+#############################################################
 
 # From Greywall 1986
 T_pcp_mK = 2.273
@@ -208,20 +234,31 @@ def f_scale(p):
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
     return (1/3) * N0(p) * (kB * T_mK(1, p) * 1e-3)**2
     
-def delta_beta_norm(p, n, method="interp"):
-    """Strong coupling corrections to material parameters, in units of 
+def delta_beta_norm(p, n, method="interp", source="RWS2019"):
+    """
+    Strong coupling corrections to material parameters, in units of 
     the modulus of the first weak coupling parameter.
+
+    The default method is interpolation of strong coupling coefficients against presure (bar).
+    And the defualt data source is Regean, Wiman and Souls 2019 data sheet. 
+
+    The other data source is Choi et. al 2007 data sheet. However, this impiraical data doesn't have 
+    Temperature dependence 
     """
     if method == "interp":
-        return delta_beta_norm_interp(p, n)
+        if source == "RWS2019":
+           return delta_beta_norm_interp(p, n, P_rws, c_rws_list), source
+        elif source == "choi2007":
+           return delta_beta_norm_interp(p, n, P_choi, c_choi_list), source
+       
     elif method == "polyfit":
         return delta_beta_norm_polyfit(p, n)
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
         
-    return
+    return 1
 
-def delta_beta_norm_interp(p, n): 
+def delta_beta_norm_interp(p, n, p_nodes, c_list): 
     """Interpolation method.
     """
     return np.interp(p, p_nodes, c_list[n-1])
@@ -242,18 +279,30 @@ def alpha_norm(t):
     return t - 1
 
 def beta_norm(t, p, n):
-    """Complete material parameter including strong coupling correction, in units of 
+    """
+    Complete material parameter including strong coupling correction, in units of 
     f_scale/(2 * np.pi * kB * T)**2
-    """ 
-    if n==1:
-        b = -1
-    elif 1 < n < 5:
-        b = 2
-    elif n==5:
-        b = -2
-    else:
-        raise ValueError("beta_norm: n must be between 1 and 5")
-    return beta_const*(b + t * delta_beta_norm(p, n))
+
+    the string type variable source determines which SC correction will be returned and witch 
+    coefficient will be used.
+    """
+    # return both of SC coefficients and data sheet
+    delta_bn, source = delta_beta_norm(p, n)
+
+    if source == "RWS2019":
+      if n==1:
+         b = -1
+      elif 1 < n < 5:
+          b = 2
+      elif n==5:
+          b = -2
+      else:
+          raise ValueError("beta_norm: n must be between 1 and 5")
+      
+      return beta_const*(b + t * delta_bn)
+  
+    elif source == "choi2007":
+        return beta_const*delta_bn
 
 def beta_norm_asarray(t, p):
     beta_norm_list = [ beta_norm(t, p, n) for n in range(1,6)]
