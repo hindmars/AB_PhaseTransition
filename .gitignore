@@ -11,6 +11,7 @@
 *.~*
 *.*~
 *.csv
+test*.py
 
 # ignore the executable of c++
 *.app 
