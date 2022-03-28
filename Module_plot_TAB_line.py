@@ -27,7 +27,7 @@
 
 
 import Module_SCCO_V02 as SC # strong coupling correction module
-import matplotlib.pyplot as plot1
+import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 
@@ -75,10 +75,10 @@ pressure = np.arange(19.9, 33.99*bar+stepPressure, stepPressure)
 
 X, Y = np.meshgrid(Temperature, pressure)
 
-print('Temperature is', Temperature, '\n length of Temperature is ', len(Temperature))
+# print('Temperature is', Temperature, '\n length of Temperature is ', len(Temperature))
 lengthT = len(Temperature)
 
-print('Pressure is',pressure,'\n length of Delta is ', len(pressure))
+# print('Pressure is',pressure,'\n length of Delta is ', len(pressure))
 lengthPressure = len(pressure)
 
 # lots of saving matrices
@@ -93,10 +93,10 @@ EnergyDensity_fB = np.zeros((lengthPressure,lengthT)) # save the SI unit \Delta 
 
 
 for iP in range(0, lengthPressure, 1):
-    print('\n\n Now P is:', pressure[iP], '\n\n')
+    print('\n TAB-RWS module is runing, Now P is:', pressure[iP])
     #indexT = math.floor(T/stepT)
     indexP = iP
-    print('indexP is ',indexP)
+    # print('indexP is ',indexP)
 
     p = pressure[iP]
     
@@ -113,19 +113,19 @@ for iP in range(0, lengthPressure, 1):
 
     c245p = c2p + c4p + c5p;c12p = c1p + c2p;c345p = c3p + c4p + c5p
 
-    print('\npressure is ',p,' ,c1p is ',c1p,' ,c2p is ',c2p,' ,c3p is ',c3p,' ,c4p is ',c4p,' ,c4p ',' ,c5p ',c5p,' ,tcp is ',Tcp,' ,xi0p is ', xi0p, '\n\n')
+    # print('\npressure is ',p,' ,c1p is ',c1p,' ,c2p is ',c2p,' ,c3p is ',c3p,' ,c4p is ',c4p,' ,c4p ',' ,c5p ',c5p,' ,tcp is ',Tcp,' ,xi0p is ', xi0p, '\n\n')
 
     N0 = ((mEffective**(2))*vFermi)/((2*pi*pi)*(hbar**(3))) # energy density of Fermi surface
 
-    print('\npressure is, ',p,' effective mass is, ', mEffective, ' Fermi velocity is,', vFermi, ' N(0) is ',N0,'\n\n')
+    # print('\npressure is, ',p,' effective mass is, ', mEffective, ' Fermi velocity is,', vFermi, ' N(0) is ',N0,'\n\n')
     
     for iT in range(0, lengthT, 1):
         #indexDelta = math.floor(delta/stepDelta)
         indexT = iT
-        print('indexT is',indexT, ' Temperature is ', Temperature[indexT])
+        # print('indexT is',indexT, ' Temperature is ', Temperature[indexT])
        
         t = Temperature[indexT]/Tcp
-        print('temperatureis:, ',t)
+        # print('temperatureis:, ',t)
 
         xiGLWeakCoupling = math.sqrt((7.0*zeta3)/20.0)*xi0p # weak coupling GL coherent length in PRB 101 024517
 
@@ -133,7 +133,7 @@ for iP in range(0, lengthPressure, 1):
 
         if t >= 1:
 
-           print(" bro, we just got temperature at Tc, save a np.nan. ")
+           # print(" bro, we just got temperature at Tc, save a np.nan. ")
       
           
            # save the energy density difference
@@ -156,7 +156,7 @@ for iP in range(0, lengthPressure, 1):
            # save the temperature-dependent coherent length
            TempretureDependent_GL_CoherentLength[indexP,indexT] = xitp
            
-           print(' Temperature dependent GL xi is ', xitp)
+           # print(' Temperature dependent GL xi is ', xitp)
             
            alphaRed = (1/3)*(t-1)
 
@@ -169,7 +169,7 @@ for iP in range(0, lengthPressure, 1):
         
            fAGLRed = alphaRed*2*(deltaA**2) + 4*beta245Red*(deltaA**4)
  
-#       fBGLRed = alphaRed*3*(delta**2) + 3*beta12345Red*(delta**4)
+#          fBGLRed = alphaRed*3*(delta**2) + 3*beta12345Red*(delta**4)
            fBGLRed = alphaRed*3*(deltaB**2) + 3*beta12345Red*(deltaB**4)
            
            fAGL = fAGLRed * N0 # real value of fAGL
@@ -185,14 +185,15 @@ for iP in range(0, lengthPressure, 1):
            EnergyDensity_fB[indexP,indexT] = fBGL
            
            
-           print('fAGL in SI unit is:', fAGL)
-           print('fBGL in SI unit is:', fBGL)
-           print('DiffFABGL in SI unit is:', DiffFABGL)   
+           # print('fAGL in SI unit is:', fAGL)
+           # print('fBGL in SI unit is:', fBGL)
+           # print('DiffFABGL in SI unit is:', DiffFABGL)   
 
     
 
 # Plot the TAB line
-# cs2 = plot1.contour(X*(10**3), Y, EnergyDensity_Difference_fABGL, levels=[0.0], colors='red'); # plot1.clabel(Cs2, inline=True, fontsize=8.5, colors='r')
+# cs2 = plt.contour(X*(10**3), Y, EnergyDensity_Difference_fABGL, levels=[0.0], colors='red');
+# plt.clabel(Cs2, inline=True, fontsize=8.5, colors='r')
 
 # plot1.show()
 

@@ -188,6 +188,10 @@ def Tc_mK(p, scale=DEFAULT_T_SCALE):
         # return np.interp(p, p_nodes, Tc_data_mK)
         return np.interp(p, P_rws, Tc_data_mK)
 
+# T_AB in mK from Greywall polynomial, Eq.15 in Phys. Rev. B 33 7520, pressure in bar    
+def T_AB_Greywall_poly(pressure):  return np.poly1d(np.flip(T_AB_poly_Greywall.coef))(pressure)
+
+
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
     """
