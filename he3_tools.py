@@ -27,7 +27,41 @@ if "DEFAULT_SC_CORRS" not in globals():
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
-# make these a Dictionary
+
+def beta_norm_wc(n):
+    """
+    
+
+    Parameters
+    ----------
+    n : int
+        Label for GL bulk free energy beta parameter.
+
+    Returns
+    -------
+    b : float
+        Normalised beta, in weak coupling app.
+
+    """
+    b = np.nan
+    if n==1:
+        b = -1
+    elif 1 < n < 5:
+        b = 2
+    elif n==5:
+        b = -2
+    if np.isnan(b):
+        raise ValueError("beta_norm_wc: n should be 1, 2, 3, 4 , or 5")
+    return b
+
+
+def convert_b_to_db(b_list, n):
+    db_list = []
+    for b in b_list:
+        db_list.append(b - beta_norm_wc(n))
+    return db_list
+
+# Construct dictionaries of model strong coupling corrections.
 
 def get_interp_data_rws19():
     p_nodes_beta = range(0, 36, 2)
@@ -73,9 +107,40 @@ def get_interp_data_wiman_thesis():
 
     return [p_nodes_beta, c_list]
 
+def get_interp_data_choi():
+    p_choi = range(0, 35, 1)
+    b1_choi = [-0.97, -0.97, -0.97, -0.98, -0.98, -0.98, -0.98, -0.98, -0.98, -0.99, -0.99, -0.99, -0.99, -0.99,
+               -1.00, -1.00, -1.00, -1.00, -1.00, -1.00, -1.01, -1.01, -1.01, -1.01, -1.01, -1.01, -1.02, -1.02,
+               -1.02,  -1.02, -1.02, -1.03, -1.03, -1.03, -1.03]
+    b2_choi = [1.89, 1.94, 1.96, 1.99, 1.99, 1.99, 1.99, 1.98, 1.98, 1.98, 1.97, 1.97, 1.96, 1.95, 1.95, 1.95, 1.95,
+               1.94,1.94, 1.93, 1.94, 1.94, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93,
+               1.93]
+    b3_choi = [2.10, 1.96, 1.86, 1.81, 1.76, 1.74, 1.72, 1.70, 1.70, 1.69, 1.69, 1.70, 1.69, 1.69, 1.70, 1.72, 1.73, 1.72,
+               1.73, 1.72, 1.74, 1.74, 1.74, 1.74, 1.74, 1.74, 1.73, 1.74, 1.73, 1.73, 1.72, 1.73, 1.73, 1.73,
+               1.73]
+    b4_choi = [1.85, 1.72, 1.63, 1.56, 1.52, 1.48, 1.46, 1.44, 1.42, 1.41, 1.40, 1.39, 1.39, 1.39, 1.38, 1.35, 1.34,
+               1.33,1.32, 1.33, 1.31, 1.29, 1.29, 1.29, 1.28, 1.28, 1.27, 1.26, 1.26, 1.26, 1.26, 1.25, 1.25, 1.25,
+               1.25]
+    b5_choi = [-1.84, -1.82, -1.81, -1.81, -1.81, -1.81, -1.82, -1.82, -1.83, -1.84, -1.85, -1.86, -1.87, -1.88, -1.89, -1.89, -1.90,
+               -1.90, -1.91, -1.92, -1.93, -1.93, -1.94, -1.95, -1.96, -1.97, -1.97, -1.98, -1.99, -2.00, -2.01, -2.02, -2.02, -2.03,
+               -2.03]
+    
+    c1 = convert_b_to_db(b1_choi, 1)
+    c2 = convert_b_to_db(b2_choi, 2)
+    c3 = convert_b_to_db(b3_choi, 3)
+    c4 = convert_b_to_db(b4_choi, 4)
+    c5 = convert_b_to_db(b5_choi, 5)
+    
+    c_choi_list = [c1, c2, c3, c4, c5]
+
+    return [p_choi, c_choi_list]
+
 
 dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
-                "Wiman_thesis" : get_interp_data_wiman_thesis()}
+                "Wiman_thesis" : get_interp_data_wiman_thesis(),
+                "Choi" : get_interp_data_choi()}
+
+# Interpolation data for other material parameters, from Greywall 1986 via RWS19
 
 p_nodes = range(0, 36, 2)
 
@@ -105,9 +170,33 @@ a1 = [-9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
 a_list = [a1[::-1]] # polyfit wants highest power first
 # b1_poly = np.polynomial.Polynomial(a1)
 
+# Conversion form Greywall to PLTS
 
-
-
+# From Tian Smith Parpia preprint 2022
+# 0.9 to 6mK
+a_G_PLTS_lo = [
+    -0.14265343150487,
+    1.2810635032153, 
+    -0.22689947807354,
+    0.084337673002034,
+    -0.016928990685839,
+    0.0017611612884063,
+    -7.4461876859237e-5]
+T_G_to_PLTS = np.polynomial.Polynomial(a_G_PLTS_lo)
+# this above 6mK
+a_G_PLTS_hi = [
+    0.020353327019475,
+    0.96670033496024,
+    0.0019559314169033,
+    -9.5551084662924e-5, 
+    3.2167457655106e-6, 
+    -7.0097586342143e-8, 
+    9.6909878738352e-10, 
+    -8.2126513949290e-12 , 
+    3.8886762300964e-14,
+    -7.8713540127550e-17]
+T_G_to_PLTS_hi = np.polynomial.Polynomial(a_G_PLTS_hi)
+#
 
 # From Greywall 1986
 T_pcp_mK = 2.273
@@ -250,7 +339,7 @@ def delta_beta_norm(p, n, method="interp"):
         
     return
 
-def delta_beta_norm_interp(p, n,): 
+def delta_beta_norm_interp(p, n): 
     """Interpolation method. Choose data source
     """
     p_nodes_beta = dbeta_data_dict[DEFAULT_SC_CORRS][0]
@@ -272,18 +361,14 @@ def alpha_norm(t):
     """
     return t - 1
 
+
 def beta_norm(t, p, n):
     """Complete material parameter including strong coupling correction, in units of 
-    f_scale/(2 * np.pi * kB * T)**2
+    f_scale/(2 * np.pi * kB * Tc)**2
     """ 
-    if n==1:
-        b = -1
-    elif 1 < n < 5:
-        b = 2
-    elif n==5:
-        b = -2
-    else:
-        raise ValueError("beta_norm: n must be between 1 and 5")
+    b = beta_norm_wc(n)
+    # else:
+    #     raise ValueError("beta_norm: n must be between 1 and 5")
     return beta_const*(b + t * delta_beta_norm(p, n))
 
 def beta_norm_asarray(t, p):

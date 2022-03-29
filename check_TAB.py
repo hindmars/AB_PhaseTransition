@@ -34,6 +34,10 @@ h.DEFAULT_SC_CORRS = "RWS19"
 
 plt.grid()
 plt.legend()
-plt.ylim(0,34)
+plt.xlim(1.8, 2.5)
+plt.ylim(21, 30)
+# plt.ylim(0,34)
 plt.xlabel(r"$T$/mK")
 plt.ylabel(r"$p$/bar")
+
+
