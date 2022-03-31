@@ -274,12 +274,25 @@ D_dict = { "B"       : id3/np.sqrt(3),
            }
 
 
-# Functions
-def Tc_mK(p, scale=DEFAULT_T_SCALE):
+# Experimental functions
+def Tc_mK_expt(p, scale=DEFAULT_T_SCALE):
     if scale == "PLTS":
         return Tc_poly_PLTS(p)
     else:
-        return np.interp(p, p_nodes, Tc_data_mK)
+        return Tc_poly_Greywall(p)
+
+def TAB_mK_expt(p, scale=DEFAULT_T_SCALE):
+    if scale == "PLTS":
+        return TAB_poly_PLTS(p)
+    else:
+        return TAB_poly_Greywall(p - p_pcp_bar)
+
+def tAB_expt(p):
+    return TAB_mK_expt(p)/Tc_mK_expt(p)
+
+# Functions
+def Tc_mK(p):
+    return np.interp(p, p_nodes, Tc_data_mK)
 
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
@@ -462,8 +475,12 @@ def t_AB(p):
     elif t_ab_val > 1:
         t_ab_val = np.nan
             
-    
     return  t_ab_val
+
+def tAB(p):
+    """Synonym for t_AB.
+    """
+    return t_AB(p)
 
 def mass_B_norm(t, p, JC):
     """B phase masses for mode with spin parity JC
@@ -660,6 +677,44 @@ def U(A, *args):
     Un4 = bn[3] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
     Un5 = bn[4] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
     return (Un0 + Un1 + Un2 + Un3 + Un4 + Un5).real
+
+
+# def U(A, alpha_norm, beta_norm_arr):
+def U_terms(A, *args):
+    """
+    Bulk free energy for superfluid He3
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter.
+    alpha_norm : float
+        alpha parameter, normalised.
+    beta_norm_arr : ndarray, shape (5,1)
+        beta parameters, normalised.
+
+    Returns
+    -------
+    float or ndarray
+        Normalised bulk free energy.
+
+    """
+    al, bn, _, _ = args_parse(*args)
+
+    dim = A.ndim
+    
+    A_T = np.swapaxes(A, dim-2, dim-1)
+    A_C = np.conj(A)
+    A_H = np.conj(A_T)
+
+    Un0 = al * tr( np.matmul(A , A_H) )
+    
+    Un1 = bn[0] *  tr( np.matmul(A , A_T)) * tr(np.matmul(A_C , A_H) ) 
+    Un2 = bn[1] *  tr( np.matmul(A , A_H) )**2
+    Un3 = bn[2] *  tr( np.matmul(np.matmul(A , A_T) , np.matmul(A_C , A_H) )  )
+    Un4 = bn[3] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
+    Un5 = bn[4] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
+    return np.array([Un0, Un1, Un2, Un3, Un4, Un5])
 
 
 def dU_dA(A, *args):
