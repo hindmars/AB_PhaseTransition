@@ -18,7 +18,7 @@
 ######                       Modules & Constants                     #######
 ############################################################################
 
-import Module_SC_Beta_V05 as SCC
+import Module_SC_Beta_V04 as SCC
 import Module_AB_wall_V00 as WB
 import he3_tools as h
 
@@ -27,7 +27,7 @@ import he3_tools as h
 
 # import Module_plot_TAB_line as TAB_RWS
 import Module_Lotynk_pT_parameter as Lotynk
-import Module_New_Parpia_pT_parameter as Parpi
+import Module_New_Parpia_pT_parameter as Parpia
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
