@@ -104,6 +104,12 @@ c_choi_list = [c1, c2, c3, c4, c5]
 
 #############################################################
 
+###############################################################################################################
+##########            Greywall, PLTS temperature scales polynomial coefficients                 ###############
+###############################################################################################################
+##'''
+#
+
 # From Greywall 1986
 T_pcp_mK = 2.273
 p_pcp_bar = 21.22
@@ -119,7 +125,16 @@ c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.0133256
 Tc_poly_PLTS = np.polynomial.Polynomial(d_c)
 TAB_poly_PLTS = np.polynomial.Polynomial(c_AB)
 
+# Greywall scale to PLTS scale, 6 order polynomial coefficients;
+GtoPLTS6 = [-0.14265343150487, 1.2810635032153, -0.22689947807354, 0.084337673002034, -0.016928990685839, 0.0017611612884063, -7.4461876859237*(10**(-5))]
+GtoPLTS6_poly = np.polynomial.Polynomial(GtoPLTS6)
 
+# Greywall scale to PLTS scale, 9 order polynomial coefficients;
+GtoPLTS9 = [0.020353327019475, 0.96670033496024, 0.0019559314169033, -9.5551084662924*(10**(-5)), 3.2167457655106*(10**(-6)), -7.0097586342143*(10**(-8)), 9.6909878738352*(10**(-10)),
+            -8.2126513949290*(10**(-12)), 3.8886762300964*(10**(-14)), -7.8713540127550*(10**(-17))]
+GtoPLTS9_poly = np.polynomial.Polynomial(GtoPLTS9)
+
+###############################################################################################################
 
 zeta3 = sp.zeta(3)
 # beta_const = 7 * zeta3/(240 * np.pi**2)
@@ -189,7 +204,11 @@ def Tc_mK(p, scale=DEFAULT_T_SCALE):
         return np.interp(p, P_rws, Tc_data_mK)
 
 # T_AB in mK from Greywall polynomial, Eq.15 in Phys. Rev. B 33 7520, pressure in bar    
-def T_AB_Greywall_poly(pressure):  return np.poly1d(np.flip(T_AB_poly_Greywall.coef))(pressure-p_pcp_bar)
+def T_AB_Greywall_poly(pressure, absv = "noabs"):
+   if absv == "abs":
+    return np.poly1d(np.flip(T_AB_poly_Greywall.coef))(abs(pressure-p_pcp_bar))
+   elif absv == "noabs":
+     return np.poly1d(np.flip(T_AB_poly_Greywall.coef))(pressure-p_pcp_bar)
 
 
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
@@ -197,6 +216,12 @@ def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """
     return t * Tc_mK(p, scale)
 
+# temperature scale convertor, Greywall to PLTS, six order polynomial, in unit of mK
+# probably works for 0.9mK till 5.6mK
+def T_GtoPlts6_poly(TG):  return np.poly1d(np.flip(GtoPLTS6_poly.coef))(TG)
+
+# temperature scale convertor, Greywall to PLTS, nine order polynomial 
+def T_GtoPlts9_poly(TG):  return np.poly1d(np.flip(GtoPLTS9_poly.coef))(TG)
 
 
 def npart(p):
