@@ -12,7 +12,7 @@
 
 # This is version 0.1 
 
-# author: Quang. Zhang (timohyva@github)
+# author: Quang (timohyva@github)
 
 ############################################################################
 ######                       Modules & Constants                     #######
