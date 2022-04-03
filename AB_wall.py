@@ -14,12 +14,12 @@ import he3_tools as h
 import he3_wall as hw
 
 # p = 25.5
-p = 32
+p = 22
 t = h.t_AB(p)
 
 def get_and_plot_wall(t,p):
 
-    A, pot, gr = hw.krylov_bubble(t,p, gr_pars=(500,125), dim=1)
+    A, pot, gr = hw.krylov_bubble(t,p, gr_pars=(500,250), dim=1)
     # A, pot, gr = hw.krylov_bubble(h.alpha_norm(t), h.beta_norm_asarray(t,p), gr_pars=(500,125), dim=1)
     
     eden, eden_grad, eden_pot = hw.energy_density(A, pot, gr)

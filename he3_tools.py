@@ -11,22 +11,23 @@ import scipy.special as sp
 import scipy.linalg as sl
 
 import scipy.constants as c
-
+import numpy.polynomial as nppoly
 
 cphy = c.physical_constants
 
 DEFAULT_T_SCALE="Greywall" 
 # DEFAULT_T_SCALE="PLTS" 
 
-# DEFAULT_SC_CORRS="Choi"
-# DEFAULT_SC_CORRS="WS15"
-if "DEFAULT_SC_CORRS" not in globals():
-    DEFAULT_SC_CORRS="RWS19"
+DEFAULT_SC_CORRS="RWS19"
 # DEFAULT_SC_CORRS="Wiman-thesis"
+# DEFAULT_SC_CORRS="Choi"
 
-# For method of linear interpolation
-# From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
+# Do we want to adjust the SC corrections to get TAB right?
+DEFAULT_SC_ADJUST=False
 
+# Polynomial for adjusting SC corrections to fit TAB data
+# Gets redefined later on if DEFAULT_SC_ADJUST==True.
+sc_corr_pol = nppoly.Polynomial([0])
 
 def beta_norm_wc(n):
     """
@@ -62,6 +63,7 @@ def convert_b_to_db(b_list, n):
     return db_list
 
 # Construct dictionaries of model strong coupling corrections.
+# From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
 def get_interp_data_rws19():
     p_nodes_beta = range(0, 36, 2)
@@ -91,21 +93,35 @@ def get_interp_data_rws19():
     return [p_nodes_beta, c_list]
 
 def get_interp_data_wiman_thesis():
-    p_nodes_beta = [ 0.,  5., 10., 15., 20., 25., 30., 34.]
-    c1 = [-0.00483092, -0.01056763, -0.01630435, -0.02022947, -0.02566425, -0.0298913,
-    -0.03351449, -0.03518519]
-    c2 = [-0.02415459, -0.06400966, -0.09269324, -0.12137681, -0.13556763, -0.15428744,
-    -0.16817633, -0.17648953]
-    c3 = [-0.01570048, -0.02566425, -0.03230676, -0.04166667, -0.04045894, -0.0419686,
-    -0.04257246, -0.04122383]
-    c4 = [-0.02536232, -0.05042271, -0.07729469, -0.10929952, -0.13979469, -0.18055556,
-    -0.23309179, -0.281562  ]
-    c5 = [-0.07850242, -0.19897343, -0.28683575, -0.34752415, -0.40247585, -0.43387681,
-    -0.44655797, -0.44219002]
+    """From Figure 8, grabbed using Web Plot Digitiser.
+    """
     
+    p_nodes = [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 
+               22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0]
+    c1 = [-0.004830918, -0.008756039, -0.009057971, -0.011171498, -0.013586957, 
+          -0.016304348, -0.01781401, -0.019021739, -0.021437198, -0.023852657, 
+          -0.025664251, -0.027475845, -0.028683575, -0.030495169, -0.031702899, 
+          -0.033514493, -0.032689211, -0.033977456]
+    c2 = [-0.025362319, -0.039855072, -0.054951691, -0.068236715, -0.080012077, 
+          -0.090881643, -0.101751208, -0.111714976, -0.120471014, -0.128623188, 
+          -0.136775362, -0.144625604, -0.151268116, -0.157306763, -0.162741546, 
+          -0.168176329, -0.173007246, -0.177536232]
+    c3 = [-0.014492754, -0.020833333, -0.023852657, -0.026871981, -0.02928744, 
+          -0.032306763, -0.035929952, -0.03955314, -0.041364734, -0.041364734, 
+          -0.040458937, -0.041364734, -0.041666667, -0.041968599, -0.041968599, 
+          -0.042572464, -0.041968599, -0.041062802]
+    c4 = [-0.026570048, -0.036533816, -0.044987923, -0.054649758, -0.065519324, 
+          -0.077294686, -0.089070048, -0.102355072, -0.115640097, -0.127717391, 
+          -0.139794686, -0.155495169, -0.172101449, -0.189915459, -0.210144928, 
+          -0.233091787, -0.257850242, -0.282608696]
+    c5 = [-0.079710145, -0.129307568, -0.174214976, -0.213768116, -0.248792271, 
+          -0.282608696, -0.310386473, -0.33544686, -0.358997585, -0.380434783, 
+          -0.400664251, -0.415157005, -0.4272343, -0.4375, -0.443538647, 
+          -0.446557971, -0.444746377, -0.443236715]
+
     c_list = [c1, c2, c3, c4, c5]
 
-    return [p_nodes_beta, c_list]
+    return [p_nodes, c_list]
 
 def get_interp_data_choi():
     p_choi = range(0, 35, 1)
@@ -137,7 +153,7 @@ def get_interp_data_choi():
 
 
 dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
-                "Wiman_thesis" : get_interp_data_wiman_thesis(),
+                "Wiman-thesis" : get_interp_data_wiman_thesis(),
                 "Choi" : get_interp_data_choi()}
 
 # Interpolation data for other material parameters, from Greywall 1986 via RWS19
@@ -215,16 +231,15 @@ c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.0133256
 Tc_poly_PLTS = np.polynomial.Polynomial(d_c)
 TAB_poly_PLTS = np.polynomial.Polynomial(c_AB)
 
-
+# Numerical constants
 zeta3 = sp.zeta(3)
-# beta_const = 7 * zeta3/(240 * np.pi**2)
 beta_const = 7 * zeta3/(80 * np.pi**2)
-xiGL_const = np.sqrt(7 * zeta3 /    20)
+xiGL_const = np.sqrt(7 * zeta3 / 20)
 
+# Physical constants
 # Helium 3 mass in u
 mhe3_u = 3.0160293 
 mhe3_kg = mhe3_u * cphy["atomic mass constant"][0]
-
 kB = c.k
 hbar = c.hbar
 
@@ -241,7 +256,7 @@ D_B = id3/np.sqrt(3)
 D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 D_polar = np.outer(e[0], e[0])
 
-# Lowest barrier by exhaustive search
+# Lowest barrier from A phase by exhaustive search
 D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
  [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
  [ 0.07959769-0.05774015j,  0.24372012-0.19001106j,  0.04900674-0.0131628j ]])
@@ -274,49 +289,62 @@ D_dict = { "B"       : id3/np.sqrt(3),
            }
 
 
-# Experimental functions
-def Tc_mK_expt(p, scale=DEFAULT_T_SCALE):
-    if scale == "PLTS":
+
+# Experimental data functions
+def Tc_mK_expt(p):
+    # if scale == "PLTS":
+    if DEFAULT_T_SCALE == "PLTS":
         return Tc_poly_PLTS(p)
     else:
         return Tc_poly_Greywall(p)
 
-def TAB_mK_expt(p, scale=DEFAULT_T_SCALE):
-    if scale == "PLTS":
-        return TAB_poly_PLTS(p)
-    else:
-        return TAB_poly_Greywall(p - p_pcp_bar)
-
-def tAB_expt(p):
-    return TAB_mK_expt(p)/Tc_mK_expt(p)
-
-# Functions
 def Tc_mK(p):
+    """Deprecated: uses interpolation to return experimental value of Tc. 
+    Gives values very close to Greywall 1986 polynomial.
+    """
+    Tc_interp = np.interp(p, p_nodes, Tc_data_mK)
+    # if scale == "PLTS":
+    if DEFAULT_T_SCALE == "PLTS":
+        return T_G_to_PLTS(Tc_interp)
+    else:
+        return Tc_interp
+    
     return np.interp(p, p_nodes, Tc_data_mK)
 
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
     """
-    return t * Tc_mK(p, scale)
+    return t * Tc_mK_expt(p, scale)
 
+def TAB_mK_expt(p):
+    if DEFAULT_T_SCALE == "PLTS":
+        TAB = TAB_poly_PLTS(p)
+    else:
+        TAB = TAB_poly_Greywall(p - p_pcp_bar)
+    if isinstance(p, np.ndarray):
+        TAB[p<p_pcp_bar] = np.nan
+    else:
+        if p < p_pcp_bar:
+            TAB = np.nan
+    return TAB
+
+def tAB_expt(p):
+    return TAB_mK_expt(p)/Tc_mK_expt(p)
 
 def npart(p):
     """Particle density at pressure p.
     """
     return np.interp(p, p_nodes, np_data)
 
-
 def mstar_m(p):
     """Effective mass ratio at pressure p.
     """
     return np.interp(p, p_nodes, mstar_m_data)
 
-
 def vf(p):
     """Fermi velocity at pressure p.
     """
     return np.interp(p, p_nodes, vf_data)
-
 
 def xi0(p):
     """Zero T Cooper pair correlation length at pressure p (nm).
@@ -333,6 +361,7 @@ def N0(p):
     """
     return npart(p) * 1.5 / (mhe3_kg * mstar_m(p) * vf(p)**2)
 
+# Theory functions
 def f_scale(p):
     """Free energy density units Joule per nm3 .
     """
@@ -344,13 +373,15 @@ def delta_beta_norm(p, n, method="interp"):
     the modulus of the first weak coupling parameter.
     """
     if method == "interp":
-        return delta_beta_norm_interp(p, n)
+        db = delta_beta_norm_interp(p, n)
     # elif method == "polyfit":
     #     return delta_beta_norm_polyfit(p, n)
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
-        
-    return
+    
+    if DEFAULT_SC_ADJUST:
+            db *= np.exp(-sc_adjust_fun(p))
+    return db
 
 def delta_beta_norm_interp(p, n): 
     """Interpolation method. Choose data source
@@ -361,7 +392,7 @@ def delta_beta_norm_interp(p, n):
 
 
 def delta_beta_norm_polyfit(p, n): 
-    """Polynomial method, not implemented yet.
+    """Polynomial method not implemented yet.
     """
     if n==1:
         return np.poly1d(a_list[n-1], len(a_list[n-1]))(p)
@@ -373,7 +404,6 @@ def alpha_norm(t):
     """Quadratic material parameter
     """
     return t - 1
-
 
 def beta_norm(t, p, n):
     """Complete material parameter including strong coupling correction, in units of 
@@ -389,7 +419,7 @@ def beta_norm_asarray(t, p):
     return np.array(beta_norm_list)
 
 def mat_pars(t,p):
-    """All 6 bulk material parameters
+    """All 6 bulk material parameters alpha, beta_a as a numpy array.
     """
     pars = np.zeros((6,))
     pars[0] = alpha_norm(t)
@@ -397,35 +427,41 @@ def mat_pars(t,p):
     return pars
 
 def beta_phase_norm(t, p, phase):
+    """Effective single beta paarameter in a given phase.
+    """
     return np.sum( beta_norm_asarray(t, p) * R_dict[phase] )
 
 def f_phase_norm(t, p, phase):
+    """Normalised free energy in a givenn phase.
+    """
     return -0.25* alpha_norm(t)**2 /( beta_phase_norm(t, p, phase))
 
 def delta_phase_norm(t, p, phase):
+    """Normalised gap parameter in a given phase.
+    """
     return np.sqrt(- alpha_norm(t)/(2 * beta_phase_norm(t, p, phase)))
 
 def delta_wc(t):
     return np.sqrt(- alpha_norm(t)/(2 * beta_const))
 
 def beta_A_norm(t, p):    
-    """Material parameter for A phase.
+    """Normalised effective single beta parameter for A phase.
     """
     return beta_norm(t, p, 2) +  beta_norm(t, p, 4) + beta_norm(t, p, 5)
 
 def beta_B_norm(t, p):
-    """Material parameter for B phase.
+    """Normalised effective single beta parameter for B phase.
     """
     return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/3
 
 
 def beta_planar_norm(t, p):
-    """Material parameter for planar phase.
+    """Normalised effective single beta parameter for planar phase.
     """
     return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))/2
 
 def beta_polar_norm(t, p):
-    """Material parameter for polar phase.
+    """Normalised effective single beta parameter for polar phase.
     """
     return beta_norm(t, p, 1) + beta_norm(t, p, 2) + (beta_norm(t, p, 3) + beta_norm(t, p, 4) + beta_norm(t, p, 5))
 
@@ -445,30 +481,33 @@ def f_planar_norm(t, p):
     return -0.25* alpha_norm(t)**2 /( beta_planar_norm(t, p))
 
 def delta_A_norm(t, p):
-    """Gap parameter for A phase, normalised to (2 * pi * kB * Tc)
+    """Gap parameter for A phase, normalised to (kB * Tc)
     """    
     return np.sqrt(- alpha_norm(t)/(2 * beta_A_norm(t,p)))
 
 
 def delta_B_norm(t, p):
-    """Gap parameter for B phase, normalised to (2 * pi * kB * Tc)
+    """Gap parameter for B phase, normalised to (kB * Tc)
     """
     return  np.sqrt(- alpha_norm(t)/(2 * beta_B_norm(t, p)))
 
 def delta_planar_norm(t, p):
-    """Gap parameter for planar phase, normalised to (2 * pi * kB * Tc)
+    """Gap parameter for planar phase, normalised to (kB * Tc)
     """
     return  np.sqrt(- alpha_norm(t)/(2 * beta_planar_norm(t, p)))
 
 def delta_polar_norm(t, p):
-    """Gap parameter for planar phase, normalised to (2 * pi * kB * Tc)
+    """Gap parameter for planar phase, normalised to (kB * Tc)
     """
     return  np.sqrt(- alpha_norm(t)/(2 * beta_polar_norm(t, p)))
 
 def t_AB(p):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p,1) + (delta_beta_norm(p,3) - 2*delta_beta_norm(p,4) - 2*delta_beta_norm(p,5))/3) 
+    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) 
+                       + (delta_beta_norm(p, 3) 
+                       - 2*delta_beta_norm(p, 4) 
+                       - 2*delta_beta_norm(p, 5))/3) 
     
     if isinstance(t_ab_val, np.ndarray):
         t_ab_val[t_ab_val > 1] = np.nan
@@ -481,6 +520,27 @@ def tAB(p):
     """Synonym for t_AB.
     """
     return t_AB(p)
+
+# Generate SC adjustment factor
+def logf_poly():
+    p = np.linspace(p_pcp_bar, 34, 100)
+    global DEFAULT_SC_ADJUST
+    tmp = DEFAULT_SC_ADJUST
+    DEFAULT_SC_ADJUST = False
+    logf = np.log(tAB_expt(p)/t_AB(p))
+    DEFAULT_SC_ADJUST=tmp
+    return nppoly.Polynomial.fit(p, logf, 2)
+
+def sc_adjust_fun(p):
+    sc_corr_pol = logf_poly()
+    adj_exp = sc_corr_pol(p)
+    p0 = p_pcp_bar
+    if isinstance(adj_exp, np.ndarray):
+        adj_exp[p < p0] = 0.0
+    else: # assume float
+        if p < p0:
+            adj_exp = 0.0
+    return adj_exp
 
 def mass_B_norm(t, p, JC):
     """B phase masses for mode with spin parity JC
@@ -497,9 +557,11 @@ def mass_B_norm(t, p, JC):
     return np.sqrt(m2)        
 
 
+
+
 def tr(A):
     """
-    Trace of order paraeeter array on last two indices
+    Trace of order parameter array on last two indices
 
     Parameters
     ----------
@@ -518,7 +580,7 @@ def tr(A):
 
 def trans(A):
     """
-    Transpose of order paraeeter array on last two indices
+    Transpose of order parameter array on last two indices
 
     Parameters
     ----------
@@ -537,7 +599,7 @@ def trans(A):
 
 def hconj(A):
     """
-    Hermitian conjugate of order paraeeter array on last two indices
+    Hermitian conjugate of order parameter array on last two indices
 
     Parameters
     ----------
@@ -917,3 +979,13 @@ def lengths(X, Y):
 
     return np.array([norm(X_Y), norm(X - X_Y)]).T
 
+
+def report_setting(name):
+    xval = globals()[name]
+    print("he3_tools:", type(xval), "variable " + name + " imported with value", xval)
+    
+for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
+    report_setting(x)
+
+
+    
