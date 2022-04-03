@@ -19,34 +19,134 @@ cphy = c.physical_constants
 DEFAULT_T_SCALE="Greywall" 
 # DEFAULT_T_SCALE="PLTS" 
 
+# DEFAULT_SC_CORRS="Choi"
+# DEFAULT_SC_CORRS="WS15"
+if "DEFAULT_SC_CORRS" not in globals():
+    DEFAULT_SC_CORRS="RWS19"
+# DEFAULT_SC_CORRS="Wiman-thesis"
+
 
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
-P_rws = range(0, 36, 2)
+def beta_norm_wc(n):
+    """
+    
 
-c1 = [-0.0098, -0.0127, -0.0155, -0.0181, -0.0207, -0.0231, -0.0254, -0.0275,
-      -0.0295, -0.0314, -0.0330, -0.0345, -0.0358, -0.0370, -0.0381, -0.0391, 
-      -0.0402, -0.0413]
+    Parameters
+    ----------
+    n : int
+        Label for GL bulk free energy beta parameter.
 
-c2 = [-0.0419, -0.0490, -0.0562, -0.0636, -0.0711, -0.0786, -0.0861, -0.0936, 
-      -0.1011, -0.1086, -0.1160, -0.1233, -0.1306, -0.1378, -0.1448, -0.1517, 
-      -0.1583, -0.1645]
+    Returns
+    -------
+    b : float (or python default, usually is double)
+        Normalised beta, in weak coupling app.
 
-c3 = [-0.0132, -0.0161, -0.0184, -0.0202, -0.0216, -0.0226, -0.0233, -0.0239, 
-      -0.0243, -0.0247, -0.0249, -0.0252, -0.0255, -0.0258, -0.0262, -0.0265, 
-      -0.0267, -0.0268]
+    """
+    b = np.nan
+    if n==1:
+        b = -1
+    elif 1 < n < 5:
+        b = 2
+    elif n==5:
+        b = -2
+    if np.isnan(b):
+        raise ValueError("beta_norm_wc: n should be 1, 2, 3, 4 , or 5")
+    return b
 
-c4 = [-0.0047, -0.0276, -0.0514, -0.0760, -0.1010, -0.1260, -0.1508, -0.1751, 
-      -0.1985, -0.2208, -0.2419, -0.2614, -0.2795, -0.2961, -0.3114, -0.3255, 
-      -0.3388, -0.3518]
 
-c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660, 
-      -0.2801, -0.2930, -0.3051, -0.3167, -0.3280, -0.3392, -0.3502, -0.3611, 
-      -0.3717, -0.3815]
+def convert_b_to_db(b_list, n):
+    db_list = []
+    for b in b_list:
+        db_list.append(b - beta_norm_wc(n))
+    return db_list
 
-c_rws_list = [c1, c2, c3, c4, c5]
+# Construct dictionaries of model strong coupling corrections.
 
+def get_interp_data_rws19():
+    p_nodes_beta = range(0, 36, 2)
+    
+    c1 = [-0.0098, -0.0127, -0.0155, -0.0181, -0.0207, -0.0231, -0.0254, -0.0275,
+          -0.0295, -0.0314, -0.0330, -0.0345, -0.0358, -0.0370, -0.0381, -0.0391, 
+          -0.0402, -0.0413]
+    
+    c2 = [-0.0419, -0.0490, -0.0562, -0.0636, -0.0711, -0.0786, -0.0861, -0.0936, 
+          -0.1011, -0.1086, -0.1160, -0.1233, -0.1306, -0.1378, -0.1448, -0.1517, 
+          -0.1583, -0.1645]
+    
+    c3 = [-0.0132, -0.0161, -0.0184, -0.0202, -0.0216, -0.0226, -0.0233, -0.0239, 
+          -0.0243, -0.0247, -0.0249, -0.0252, -0.0255, -0.0258, -0.0262, -0.0265, 
+          -0.0267, -0.0268]
+    
+    c4 = [-0.0047, -0.0276, -0.0514, -0.0760, -0.1010, -0.1260, -0.1508, -0.1751, 
+          -0.1985, -0.2208, -0.2419, -0.2614, -0.2795, -0.2961, -0.3114, -0.3255, 
+          -0.3388, -0.3518]
+    
+    c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660, 
+          -0.2801, -0.2930, -0.3051, -0.3167, -0.3280, -0.3392, -0.3502, -0.3611, 
+          -0.3717, -0.3815]
+
+    c_list = [c1, c2, c3, c4, c5]
+
+    return [p_nodes_beta, c_list]
+
+def get_interp_data_wiman_thesis():
+    p_nodes_beta = [ 0.,  5., 10., 15., 20., 25., 30., 34.]
+    c1 = [-0.00483092, -0.01056763, -0.01630435, -0.02022947, -0.02566425, -0.0298913,
+    -0.03351449, -0.03518519]
+    c2 = [-0.02415459, -0.06400966, -0.09269324, -0.12137681, -0.13556763, -0.15428744,
+    -0.16817633, -0.17648953]
+    c3 = [-0.01570048, -0.02566425, -0.03230676, -0.04166667, -0.04045894, -0.0419686,
+    -0.04257246, -0.04122383]
+    c4 = [-0.02536232, -0.05042271, -0.07729469, -0.10929952, -0.13979469, -0.18055556,
+    -0.23309179, -0.281562  ]
+    c5 = [-0.07850242, -0.19897343, -0.28683575, -0.34752415, -0.40247585, -0.43387681,
+    -0.44655797, -0.44219002]
+    
+    c_list = [c1, c2, c3, c4, c5]
+
+    return [p_nodes_beta, c_list]
+
+def get_interp_data_choi():
+    p_choi = range(0, 35, 1)
+    b1_choi = [-0.97, -0.97, -0.97, -0.98, -0.98, -0.98, -0.98, -0.98, -0.98, -0.99, -0.99, -0.99, -0.99, -0.99,
+               -1.00, -1.00, -1.00, -1.00, -1.00, -1.00, -1.01, -1.01, -1.01, -1.01, -1.01, -1.01, -1.02, -1.02,
+               -1.02,  -1.02, -1.02, -1.03, -1.03, -1.03, -1.03]
+    b2_choi = [1.89, 1.94, 1.96, 1.99, 1.99, 1.99, 1.99, 1.98, 1.98, 1.98, 1.97, 1.97, 1.96, 1.95, 1.95, 1.95, 1.95,
+               1.94,1.94, 1.93, 1.94, 1.94, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93,
+               1.93]
+    b3_choi = [2.10, 1.96, 1.86, 1.81, 1.76, 1.74, 1.72, 1.70, 1.70, 1.69, 1.69, 1.70, 1.69, 1.69, 1.70, 1.72, 1.73, 1.72,
+               1.73, 1.72, 1.74, 1.74, 1.74, 1.74, 1.74, 1.74, 1.73, 1.74, 1.73, 1.73, 1.72, 1.73, 1.73, 1.73,
+               1.73]
+    b4_choi = [1.85, 1.72, 1.63, 1.56, 1.52, 1.48, 1.46, 1.44, 1.42, 1.41, 1.40, 1.39, 1.39, 1.39, 1.38, 1.35, 1.34,
+               1.33,1.32, 1.33, 1.31, 1.29, 1.29, 1.29, 1.28, 1.28, 1.27, 1.26, 1.26, 1.26, 1.26, 1.25, 1.25, 1.25,
+               1.25]
+    b5_choi = [-1.84, -1.82, -1.81, -1.81, -1.81, -1.81, -1.82, -1.82, -1.83, -1.84, -1.85, -1.86, -1.87, -1.88, -1.89, -1.89, -1.90,
+               -1.90, -1.91, -1.92, -1.93, -1.93, -1.94, -1.95, -1.96, -1.97, -1.97, -1.98, -1.99, -2.00, -2.01, -2.02, -2.02, -2.03,
+               -2.03]
+    
+    c1 = convert_b_to_db(b1_choi, 1)
+    c2 = convert_b_to_db(b2_choi, 2)
+    c3 = convert_b_to_db(b3_choi, 3)
+    c4 = convert_b_to_db(b4_choi, 4)
+    c5 = convert_b_to_db(b5_choi, 5)
+    
+    c_choi_list = [c1, c2, c3, c4, c5]
+
+    return [p_choi, c_choi_list]
+
+
+dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
+                "Wiman_thesis" : get_interp_data_wiman_thesis(),
+                "Choi" : get_interp_data_choi()}
+
+######################################################################################
+### Interpolation data for other material parameters, from Greywall 1986 via RWS19 ###
+######################################################################################
+##'''
+#
+p_nodes = range(0, 36, 2)
 
 Tc_data_mK = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 
       2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.48]
@@ -74,48 +174,19 @@ a1 = [-9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
 a_list = [a1[::-1]] # polyfit wants highest power first
 # b1_poly = np.polynomial.Polynomial(a1)
 
-#############################################################
-##''' For method of linear interpolation
-#'    From H. Choi, J. P. Davis, J. Pollanen, T. M. Haard, and W. P. Halperin, Phy. Rew. B 75, 174503; Table II
-
-P_choi = range(0, 35, 1)
-
-c1_choi = [-0.97, -0.97, -0.97, -0.98, -0.98, -0.98, -0.98, -0.98, -0.98, -0.99, -0.99, -0.99, -0.99, -0.99,
-           -1.00, -1.00, -1.00, -1.00, -1.00, -1.00, -1.01, -1.01, -1.01, -1.01, -1.01, -1.01, -1.02, -1.02,
-           -1.02,  -1.02, -1.02, -1.03, -1.03, -1.03, -1.03]
-
-c2_choi = [1.89, 1.94, 1.96, 1.99, 1.99, 1.99, 1.99, 1.98, 1.98, 1.98, 1.97, 1.97, 1.96, 1.95, 1.95, 1.95, 1.95,
-           1.94,1.94, 1.93, 1.94, 1.94, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93,
-           1.93]
- 
-c3_choi = [2.10, 1.96, 1.86, 1.81, 1.76, 1.74, 1.72, 1.70, 1.70, 1.69, 1.69, 1.70, 1.69, 1.69, 1.70, 1.72, 1.73, 1.72,
-           1.73, 1.72, 1.74, 1.74, 1.74, 1.74, 1.74, 1.74, 1.73, 1.74, 1.73, 1.73, 1.72, 1.73, 1.73, 1.73,
-           1.73]
-
-c4_choi = [1.85, 1.72, 1.63, 1.56, 1.52, 1.48, 1.46, 1.44, 1.42, 1.41, 1.40, 1.39, 1.39, 1.39, 1.38, 1.35, 1.34,
-           1.33,1.32, 1.33, 1.31, 1.29, 1.29, 1.29, 1.28, 1.28, 1.27, 1.26, 1.26, 1.26, 1.26, 1.25, 1.25, 1.25,
-           1.25]
-
-c5_choi = [-1.84, -1.82, -1.81, -1.81, -1.81, -1.81, -1.82, -1.82, -1.83, -1.84, -1.85, -1.86, -1.87, -1.88, -1.89, -1.89, -1.90,
-           -1.90, -1.91, -1.92, -1.93, -1.93, -1.94, -1.95, -1.96, -1.97, -1.97, -1.98, -1.99, -2.00, -2.01, -2.02, -2.02, -2.03,
-           -2.03]
-
-c_choi_list = [c1, c2, c3, c4, c5]
-
-#############################################################
-
 ###############################################################################################################
 ##########            Greywall, PLTS temperature scales polynomial coefficients                 ###############
 ###############################################################################################################
 ##'''
-#
 
 # From Greywall 1986
 T_pcp_mK = 2.273
 p_pcp_bar = 21.22
 # Greywall 1986 TAB polynomial fit
-a_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
-T_AB_poly_Greywall = np.polynomial.Polynomial(a_G)
+aTAB_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
+aTc_G = [0.92938375, 0.13867188, -0.69302185e-2, 0.25685169e-3, -0.57248644e-5, 0.5301091e-7]
+TAB_poly_Greywall = np.polynomial.Polynomial(aTAB_G)
+Tc_poly_Greywall = np.polynomial.Polynomial(aTc_G)
 
 
 # For polynomial method for Tc and T_AB, from Parpia et al 2022, PLTS
@@ -127,12 +198,12 @@ TAB_poly_PLTS = np.polynomial.Polynomial(c_AB)
 
 # Greywall scale to PLTS scale, 6 order polynomial coefficients;
 GtoPLTS6 = [-0.14265343150487, 1.2810635032153, -0.22689947807354, 0.084337673002034, -0.016928990685839, 0.0017611612884063, -7.4461876859237*(10**(-5))]
-GtoPLTS6_poly = np.polynomial.Polynomial(GtoPLTS6)
+GtoPLTS6_low_poly = np.polynomial.Polynomial(GtoPLTS6)
 
 # Greywall scale to PLTS scale, 9 order polynomial coefficients;
 GtoPLTS9 = [0.020353327019475, 0.96670033496024, 0.0019559314169033, -9.5551084662924*(10**(-5)), 3.2167457655106*(10**(-6)), -7.0097586342143*(10**(-8)), 9.6909878738352*(10**(-10)),
             -8.2126513949290*(10**(-12)), 3.8886762300964*(10**(-14)), -7.8713540127550*(10**(-17))]
-GtoPLTS9_poly = np.polynomial.Polynomial(GtoPLTS9)
+GtoPLTS9_high_poly = np.polynomial.Polynomial(GtoPLTS9)
 
 ###############################################################################################################
 
@@ -161,7 +232,7 @@ D_B = id3/np.sqrt(3)
 D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 D_polar = np.outer(e[0], e[0])
 
-# Lowest barrier by exhaustive search
+# Lowest barrier by exhaustive search with p = 32 bar, T = 0.01K
 D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
  [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
  [ 0.07959769-0.05774015j,  0.24372012-0.19001106j,  0.04900674-0.0131628j ]])
@@ -194,21 +265,28 @@ D_dict = { "B"       : id3/np.sqrt(3),
            }
 
 
-# Functions
+#################################################################################
+###                          Experimental functions                           ###
+#################################################################################
 
-def Tc_mK(p, scale=DEFAULT_T_SCALE):
+def Tc_mK_expt(p, scale=DEFAULT_T_SCALE):
     if scale == "PLTS":
         return Tc_poly_PLTS(p)
     else:
-        # return np.interp(p, p_nodes, Tc_data_mK)
-        return np.interp(p, P_rws, Tc_data_mK)
+        return Tc_poly_Greywall(p)
 
-# T_AB in mK from Greywall polynomial, Eq.15 in Phys. Rev. B 33 7520, pressure in bar    
-def T_AB_Greywall_poly(pressure, absv = "noabs"):
-   if absv == "abs":
-    return np.poly1d(np.flip(T_AB_poly_Greywall.coef))(abs(pressure-p_pcp_bar))
-   elif absv == "noabs":
-     return np.poly1d(np.flip(T_AB_poly_Greywall.coef))(pressure-p_pcp_bar)
+def TAB_mK_expt(p, scale=DEFAULT_T_SCALE):
+    if scale == "PLTS":
+        return TAB_poly_PLTS(p)
+    else:
+        return TAB_poly_Greywall(p - p_pcp_bar)
+
+def tAB_expt(p):
+    return TAB_mK_expt(p)/Tc_mK_expt(p)
+
+# Functions
+def Tc_mK(p):
+    return np.interp(p, p_nodes, Tc_data_mK)
 
 
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
@@ -218,12 +296,13 @@ def T_mK(t, p, scale=DEFAULT_T_SCALE):
 
 # temperature scale convertor, Greywall to PLTS, six order polynomial, in unit of mK
 # probably works for 0.9mK till 5.6mK
-def T_GtoPlts6_poly(TG):  return np.poly1d(np.flip(GtoPLTS6_poly.coef))(TG)
+def T_GtoPlts6_low_poly(TG):  return np.poly1d(np.flip(GtoPLTS6_low_poly.coef))(TG)
 
 # temperature scale convertor, Greywall to PLTS, nine order polynomial 
-def T_GtoPlts9_poly(TG):  return np.poly1d(np.flip(GtoPLTS9_poly.coef))(TG)
+def T_GtoPlts9_high_poly(TG):  return np.poly1d(np.flip(GtoPLTS9_high_poly.coef))(TG)
 
 
+P_rws = range(0, 36, 2)
 def npart(p):
     """Particle density at pressure p.
     """
@@ -268,7 +347,7 @@ def f_scale(p):
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
     return (1/3) * N0(p) * (kB * T_mK(1, p) * 1e-3)**2
     
-def delta_beta_norm(p, n, method="interp", source="RWS2019"):
+def delta_beta_norm(p, n, method="interp"):
     """
     Strong coupling corrections to material parameters, in units of 
     the modulus of the first weak coupling parameter.
@@ -280,22 +359,20 @@ def delta_beta_norm(p, n, method="interp", source="RWS2019"):
     Temperature dependence 
     """
     if method == "interp":
-        if source == "RWS2019":
-           return delta_beta_norm_interp(p, n, P_rws, c_rws_list), source
-        elif source == "choi2007":
-           return delta_beta_norm_interp(p, n, P_choi, c_choi_list), source
-       
-    elif method == "polyfit":
-        return delta_beta_norm_polyfit(p, n)
+        return delta_beta_norm_interp(p, n)
+    # elif method == "polyfit":
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
         
     return 1
 
-def delta_beta_norm_interp(p, n, p_nodes, c_list): 
-    """Interpolation method.
+
+def delta_beta_norm_interp(p, n): 
+    """Interpolation method. Choose data source
     """
-    return np.interp(p, p_nodes, c_list[n-1])
+    p_nodes_beta = dbeta_data_dict[DEFAULT_SC_CORRS][0]
+    c_list = dbeta_data_dict[DEFAULT_SC_CORRS][1]
+    return np.interp(p, p_nodes_beta, c_list[n-1])
 
 
 def delta_beta_norm_polyfit(p, n): 
@@ -312,31 +389,16 @@ def alpha_norm(t):
     """
     return t - 1
 
+
 def beta_norm(t, p, n):
-    """
-    Complete material parameter including strong coupling correction, in units of 
-    f_scale/(2 * np.pi * kB * T)**2
+    """Complete material parameter including strong coupling correction, within units of 
+    f_scale/(2 * np.pi * kB * Tc)**2
+    """ 
+    b = beta_norm_wc(n)
+    # else:
+    #     raise ValueError("beta_norm: n must be between 1 and 5")
+    return beta_const*(b + t * delta_beta_norm(p, n))
 
-    the string type variable source determines which SC correction will be returned and witch 
-    coefficient will be used.
-    """
-    # return both of SC coefficients and data sheet
-    delta_bn, source = delta_beta_norm(p, n)
-
-    if source == "RWS2019":
-      if n==1:
-         b = -1
-      elif 1 < n < 5:
-          b = 2
-      elif n==5:
-          b = -2
-      else:
-          raise ValueError("beta_norm: n must be between 1 and 5")
-      
-      return beta_const*(b + t * delta_bn)
-  
-    elif source == "choi2007":
-        return beta_const*delta_bn
 
 def beta_norm_asarray(t, p):
     beta_norm_list = [ beta_norm(t, p, n) for n in range(1,6)]
@@ -429,8 +491,12 @@ def t_AB(p):
     elif t_ab_val > 1:
         t_ab_val = np.nan
             
-    
     return  t_ab_val
+
+def tAB(p):
+    """Synonym for t_AB.
+    """
+    return t_AB(p)
 
 def mass_B_norm(t, p, JC):
     """B phase masses for mode with spin parity JC
@@ -627,6 +693,44 @@ def U(A, *args):
     Un4 = bn[3] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
     Un5 = bn[4] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
     return (Un0 + Un1 + Un2 + Un3 + Un4 + Un5).real
+
+
+# def U(A, alpha_norm, beta_norm_arr):
+def U_terms(A, *args):
+    """
+    Bulk free energy for superfluid He3
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter.
+    alpha_norm : float
+        alpha parameter, normalised.
+    beta_norm_arr : ndarray, shape (5,1)
+        beta parameters, normalised.
+
+    Returns
+    -------
+    float or ndarray
+        Normalised bulk free energy.
+
+    """
+    al, bn, _, _ = args_parse(*args)
+
+    dim = A.ndim
+    
+    A_T = np.swapaxes(A, dim-2, dim-1)
+    A_C = np.conj(A)
+    A_H = np.conj(A_T)
+
+    Un0 = al * tr( np.matmul(A , A_H) )
+    
+    Un1 = bn[0] *  tr( np.matmul(A , A_T)) * tr(np.matmul(A_C , A_H) ) 
+    Un2 = bn[1] *  tr( np.matmul(A , A_H) )**2
+    Un3 = bn[2] *  tr( np.matmul(np.matmul(A , A_T) , np.matmul(A_C , A_H) )  )
+    Un4 = bn[3] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
+    Un5 = bn[4] *  tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
+    return np.array([Un0, Un1, Un2, Un3, Un4, Un5])
 
 
 def dU_dA(A, *args):
