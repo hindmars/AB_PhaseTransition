@@ -62,7 +62,8 @@ Temperature = (np.arange(1.50, 2.5, 0.01))*(10**(-3)) # Kelvin
 
 TAB_RWS = h.T_mK(h.t_AB(Pressure), Pressure)
 
-TAB_Greywall = h.T_AB_Greywall_poly(Pressure)
+# TAB_Greywall = h.TAB_poly_Greywall(Pressure)
+TAB_Greywall = h.TAB_mK_expt(Pressure)
 
 T_array, P_array = np.meshgrid(Temperature, Pressure)
 
@@ -205,7 +206,7 @@ Levels1sh = [0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.9]
 # plot the TAB line with RWS2019 SC
 # TABrws = ax.contour(TAB_RWS.X*(10**3), TAB_RWS.Y, TAB_RWS.EnergyDensity_Difference_fABGL, levels=[0.0], colors='red')
 
-cf1 = ax.contourf(h.T_GtoPlts6_poly(T_array*(10**(3)) + T_shift_array), P_array, Rc*(10**(6)), cmap=cm.PuBu_r, levels=Levels2)
+cf1 = ax.contourf(h.T_GtoPlts6_low_poly(T_array*(10**(3)) + T_shift_array), P_array, Rc*(10**(6)), cmap=cm.PuBu_r, levels=Levels2)
 ax.set_ylabel(r'$p/bar$', fontsize=15.0,);
 ax.set_xlabel(r'$T$/mK', fontsize=15.0,);
 plt.xticks(fontsize=15.)
@@ -214,15 +215,15 @@ plt.yticks(fontsize=15.)
 fig.colorbar(cf1, ax=ax, location = 'left')
 
 # cf2 = ax.contourf(h.T_GtoPlts6_poly(T_array*(10**(3)) + T_shift_array), P_array, Rc_sh*(10**(6)), cmap=cm.gist_heat, levels=Levels2)
-cf2 = ax.contourf(h.T_GtoPlts6_poly(T_array*(10**(3))), P_array, Rc_sh*(10**(6)), cmap=cm.gist_heat, levels=Levels1sh)
+cf2 = ax.contourf(h.T_GtoPlts6_low_poly(T_array*(10**(3))), P_array, Rc_sh*(10**(6)), cmap=cm.gist_heat, levels=Levels1sh)
 
 fig.colorbar(cf2, ax=ax, location = 'right')
 
-c3 = ax.contour(h.T_GtoPlts6_poly(T_array*(10**(3)) +  T_shift_array), P_array, Rc*(10**(6)), levels=Levels1, colors='orange')
+c3 = ax.contour(h.T_GtoPlts6_low_poly(T_array*(10**(3)) +  T_shift_array), P_array, Rc*(10**(6)), levels=Levels1, colors='orange')
 plt.clabel(c3, inline=True, fontsize=10.5, colors='r')
 
 # c4 = ax.contour(h.T_GtoPlts6_poly(T_array*(10**(3)) +  T_shift_array), P_array, Rc_sh*(10**(6)), levels=Levels1, colors='blue')
-c4 = ax.contour(h.T_GtoPlts6_poly(T_array*(10**(3))), P_array, Rc_sh*(10**(6)), levels=Levels1sh, colors='blue')
+c4 = ax.contour(h.T_GtoPlts6_low_poly(T_array*(10**(3))), P_array, Rc_sh*(10**(6)), levels=Levels1sh, colors='blue')
 plt.clabel(c4, inline=True, fontsize=10.5, colors='b')
 
 # plot Greywall T_AB line
@@ -236,7 +237,7 @@ TABPlts, = ax.plot(h.TAB_poly_PLTS(Pressure), Pressure, color = "pink")
 
 # plot PLTS Tc
 # TCPlts, = ax.plot(h.Tc_mK(Pressure, "PLTS"), Pressure, color = "purple")
-TCPlts, = ax.plot(h.T_GtoPlts6_poly(h.Tc_mK(Pressure)), Pressure, color = "purple")
+TCPlts, = ax.plot(h.T_GtoPlts6_low_poly(h.Tc_mK(Pressure)), Pressure, color = "purple")
 
 sIC = ax.scatter(Parpia.T_IC, Parpia.pressure, color = "yellow", label="p-T IC")
 sHEC = ax.scatter(Parpia.T_HEC, Parpia.pressure, color = "red", marker = "x", label="p-T HEC")
@@ -253,7 +254,7 @@ ax.set_xlim([1.8, 2.4])
 ax.set_ylim([21.2, 30.])
 ax.grid(True)
 
-fig.savefig("Rc_contour_RWS_GreywelltoPltsTC_AToBBToA.pdf")
+fig.savefig("Rc_contour_RWS_GreywelltoPltsTC_AToBBToA2.pdf")
 
 plt.show()
 
