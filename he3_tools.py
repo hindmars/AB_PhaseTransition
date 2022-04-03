@@ -292,7 +292,7 @@ def Tc_mK(p):
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
     """
-    return t * Tc_mK(p, scale)
+    return t * Tc_mK(p)
 
 # temperature scale convertor, Greywall to PLTS, six order polynomial, in unit of mK
 # probably works for 0.9mK till 5.6mK
@@ -363,8 +363,7 @@ def delta_beta_norm(p, n, method="interp"):
     # elif method == "polyfit":
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
-        
-    return 1
+        return 1
 
 
 def delta_beta_norm_interp(p, n): 
@@ -484,7 +483,7 @@ def delta_polar_norm(t, p):
 def t_AB(p):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p,1)[0] + (delta_beta_norm(p,3)[0] - 2*delta_beta_norm(p,4)[0] - 2*delta_beta_norm(p,5)[0])/3) 
+    t_ab_val = (1/3)/ (delta_beta_norm(p,1) + (delta_beta_norm(p,3) - 2*delta_beta_norm(p,4) - 2*delta_beta_norm(p,5))/3) 
     
     if isinstance(t_ab_val, np.ndarray):
         t_ab_val[t_ab_val > 1] = np.nan
