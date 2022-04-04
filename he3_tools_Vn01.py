@@ -23,24 +23,12 @@ DEFAULT_SC_CORRS="RWS19"
 # DEFAULT_SC_CORRS="Wiman-thesis"
 # DEFAULT_SC_CORRS="Choi"
 
-<<<<<<< HEAD
 
 # For method of linear interpolation
 # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
-=======
-# Do we want to adjust the SC corrections to get TAB right?
-DEFAULT_SC_ADJUST=False
-
-# Polynomial for adjusting SC corrections to fit TAB data
-# Gets redefined later on if DEFAULT_SC_ADJUST==True.
-sc_corr_pol = nppoly.Polynomial([0])
-
->>>>>>> hindmarsGithub/main
 def beta_norm_wc(n):
     """
-    
-
     Parameters
     ----------
     n : int
@@ -219,7 +207,6 @@ c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.0133256
 Tc_poly_PLTS = np.polynomial.Polynomial(d_c)
 TAB_poly_PLTS = np.polynomial.Polynomial(c_AB)
 
-<<<<<<< HEAD
 # Greywall scale to PLTS scale, 6 order polynomial coefficients;
 GtoPLTS6 = [-0.14265343150487, 1.2810635032153, -0.22689947807354, 0.084337673002034, -0.016928990685839, 0.0017611612884063, -7.4461876859237*(10**(-5))]
 GtoPLTS6_low_poly = np.polynomial.Polynomial(GtoPLTS6)
@@ -231,9 +218,7 @@ GtoPLTS9_high_poly = np.polynomial.Polynomial(GtoPLTS9)
 
 ###############################################################################################################
 
-=======
-# Numerical constants
->>>>>>> hindmarsGithub/main
+
 zeta3 = sp.zeta(3)
 beta_const = 7 * zeta3/(80 * np.pi**2)
 xiGL_const = np.sqrt(7 * zeta3 / 20)
@@ -258,11 +243,8 @@ D_B = id3/np.sqrt(3)
 D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 D_polar = np.outer(e[0], e[0])
 
-<<<<<<< HEAD
+
 # Lowest barrier by exhaustive search with p = 32 bar, T = 0.01K
-=======
-# Lowest barrier from A phase by exhaustive search
->>>>>>> hindmarsGithub/main
 D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
  [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
  [ 0.07959769-0.05774015j,  0.24372012-0.19001106j,  0.04900674-0.0131628j ]])
@@ -295,24 +277,23 @@ D_dict = { "B"       : id3/np.sqrt(3),
            }
 
 
-<<<<<<< HEAD
 #################################################################################
 ###                          Experimental functions                           ###
 #################################################################################
 
 def Tc_mK_expt(p, scale=DEFAULT_T_SCALE):
     if scale == "PLTS":
-=======
-
-# Experimental data functions
-def Tc_mK_expt(p):
-    # if scale == "PLTS":
-    if DEFAULT_T_SCALE == "PLTS":
->>>>>>> hindmarsGithub/main
         return Tc_poly_PLTS(p)
     else:
         return Tc_poly_Greywall(p)
 
+def TAB_mK_expt(p, scale=DEFAULT_T_SCALE):
+    if scale == "PLTS":
+        return TAB_poly_PLTS(p)
+    else:
+        return TAB_poly_Greywall(p-p_pcp_bar)
+
+    
 def Tc_mK(p):
     """Deprecated: uses interpolation to return experimental value of Tc. 
     Gives values very close to Greywall 1986 polynomial.
@@ -330,30 +311,11 @@ def Tc_mK(p):
 def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
     """
-<<<<<<< HEAD
     return t * Tc_mK(p)
 
 # temperature scale convertor, Greywall to PLTS, six order polynomial, in unit of mK
 # probably works for 0.9mK till 5.6mK
 def T_GtoPlts6_low_poly(TG):  return np.poly1d(np.flip(GtoPLTS6_low_poly.coef))(TG)
-=======
-    return t * Tc_mK_expt(p, scale)
-
-def TAB_mK_expt(p):
-    if DEFAULT_T_SCALE == "PLTS":
-        TAB = TAB_poly_PLTS(p)
-    else:
-        TAB = TAB_poly_Greywall(p - p_pcp_bar)
-    if isinstance(p, np.ndarray):
-        TAB[p<p_pcp_bar] = np.nan
-    else:
-        if p < p_pcp_bar:
-            TAB = np.nan
-    return TAB
-
-def tAB_expt(p):
-    return TAB_mK_expt(p)/Tc_mK_expt(p)
->>>>>>> hindmarsGithub/main
 
 # temperature scale convertor, Greywall to PLTS, nine order polynomial 
 def T_GtoPlts9_high_poly(TG):  return np.poly1d(np.flip(GtoPLTS9_high_poly.coef))(TG)
@@ -415,18 +377,12 @@ def delta_beta_norm(p, n, method="interp"):
     """
     if method == "interp":
         db = delta_beta_norm_interp(p, n)
+        return db
     # elif method == "polyfit":
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
-<<<<<<< HEAD
         return 1
 
-=======
-    
-    if DEFAULT_SC_ADJUST:
-            db *= np.exp(-sc_adjust_fun(p))
-    return db
->>>>>>> hindmarsGithub/main
 
 def delta_beta_norm_interp(p, n): 
     """Interpolation method. Choose data source
@@ -550,10 +506,7 @@ def delta_polar_norm(t, p):
 def t_AB(p):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) 
-                       + (delta_beta_norm(p, 3) 
-                       - 2*delta_beta_norm(p, 4) 
-                       - 2*delta_beta_norm(p, 5))/3) 
+    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) + (delta_beta_norm(p, 3) -2.*delta_beta_norm(p, 4) -2.*delta_beta_norm(p, 5))/3) 
     
     if isinstance(t_ab_val, np.ndarray):
         t_ab_val[t_ab_val > 1] = np.nan
@@ -1026,12 +979,12 @@ def lengths(X, Y):
     return np.array([norm(X_Y), norm(X - X_Y)]).T
 
 
-def report_setting(name):
-    xval = globals()[name]
-    print("he3_tools:", type(xval), "variable " + name + " imported with value", xval)
+# def report_setting(name):
+#     xval = globals()[name]
+#     print("he3_tools:", type(xval), "variable " + name + " imported with value", xval)
     
-for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
-    report_setting(x)
+# for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
+#     report_setting(x)
 
 
     
