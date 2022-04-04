@@ -20,7 +20,7 @@
 
 import Module_SC_Beta_V04 as SCC
 import Module_AB_wall_V00 as WB
-import he3_tools as h
+import he3_tools_Vn01 as h
 
 # Tc, TAB data digitized from Parpia's manuscript
 # import Module_p_Tc_TAB_Parpia as pTcTAB
