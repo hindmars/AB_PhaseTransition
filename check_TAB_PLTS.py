@@ -14,6 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import he3_tools as h
 
+h.DEFAULT_T_SCALE = "PLTS"
+
+
 p = np.linspace(0,34,500)
 plt.figure()
 
@@ -50,5 +53,4 @@ plt.ylim(21, 34)
 plt.xlabel(r"$T$/mK")
 plt.ylabel(r"$p$/bar")
 plt.title("Temperature scale " + h.DEFAULT_T_SCALE)
-
 
