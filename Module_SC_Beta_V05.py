@@ -65,7 +65,7 @@ import Module_RWS_SC_expo_poly_correction_Greywall as SC_CoEpoly_G
 m = 1;s = 1; J = 1; Kelvin = 1; kg = 1; bar = 1;
 
 # \zeta(3)
-zeta3 = 1.2020569;
+zeta3 = 1.2020569031595942854
 
 # Boltzmann constant J.K^-1
 kb = 1.380649*(10**(-23))*J*(Kelvin**(-1))
@@ -95,9 +95,9 @@ BetaObject = SC.BETA('betaAndTc')
 ###   string for switch between expo-correccted SC & original SC   ###
 ######################################################################
 
-# SC_Correction_Switch = "ON"
+SC_Correction_Switch = "ON"
 
-SC_Correction_Switch = "OFF" 
+# SC_Correction_Switch = "OFF" 
 
 ######################################################################
 
@@ -175,6 +175,11 @@ def N0(p):
    J = 1; s = 1;hbar = 1.054571817*(10**(-34))*J*s
 
    return ((mEff(p)**(2))*vF(p))/((2*pi*pi)*(hbar**(3)))
+
+# K1, K2, K3, and K for gradient terms
+def K(p):
+   zeta3 = 1.2020569031595942854;
+   return ((7.*zeta3)/60.)*N0(p)*xi0p(p)*xi0p(p)   
    
 # pnoa and pnob tuple
 def pno(): zeta3 = 1.2020569; return (1./3., (7.0*zeta3)/(240.0*pi*pi))
@@ -204,15 +209,17 @@ def beta1_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
      # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)  
 
-     print("\n q looks like ", q)
+     # print("\n q looks like ", q)
 
      if q < 0:
        return -1. + (T/Tcp(p))*np.exp(q)*BetaObject.c1p
      elif q >= 0:
-       return -1. + (T/Tcp(p))*BetaObject.c1p
+       # return -1. + (T/Tcp(p))*BetaObject.c1p
+        return -1. + (T/Tcp(p))*np.exp(q)*BetaObject.c1p
     
    elif (key  == "OFF")  and (scOption_WS == "NO"):
       # return -1. + (T/Tcp(p))*BetaObject.c1p
+      # print(" fudge_c looks like\n ", fudge_c,"\n")
       return -1. + (T/Tcp(p))*(fudge_c[0])*BetaObject.c1p
 
    if scOption_WS == "YES":
@@ -232,10 +239,12 @@ def beta2_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       if q < 0:
         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c2p
       elif q >= 0:
-         return 2. + (T/Tcp(p))*BetaObject.c2p
+         # return 2. + (T/Tcp(p))*BetaObject.c2p
+         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c2p
     
     elif (key  == "OFF") and (scOption_WS == "NO"):
        # return 2. + (T/Tcp(p))*BetaObject.c2p
+       # print(" fudge_c looks like\n ", fudge_c,"\n")
        return 2. + (T/Tcp(p))*(fudge_c[1])*BetaObject.c2p
 
     if scOption_WS == "YES":
@@ -258,10 +267,12 @@ def beta3_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       if q < 0:
         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c3p
       elif q >= 0:
-         return 2. + (T/Tcp(p))*BetaObject.c3p
+         # return 2. + (T/Tcp(p))*BetaObject.c3p
+         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c3p
     
    elif (key == "OFF") and (scOption_WS == "NO"):
        # return 2. + (T/Tcp(p))*BetaObject.c3p
+       # print(" fudge_c looks like\n ", fudge_c,"\n")
        return 2. + (T/Tcp(p))*(fudge_c[2])*BetaObject.c3p
       
    if scOption_WS == "YES":
@@ -283,10 +294,12 @@ def beta4_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       if q < 0:
         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c4p
       elif q >= 0:
-         return 2. + (T/Tcp(p))*BetaObject.c4p
+         # return 2. + (T/Tcp(p))*BetaObject.c4p
+         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c4p
     
    elif (key == "OFF") and (scOption_WS == "NO"):
        #return 2. + (T/Tcp(p))*BetaObject.c4p
+       #print(" fudge_c looks like\n ", fudge_c,"\n")
        return 2. + (T/Tcp(p))*(fudge_c[3])*BetaObject.c4p
 
    if scOption_WS == "YES":
@@ -308,10 +321,12 @@ def beta5_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       if q < 0:
         return -2. + (T/Tcp(p))*np.exp(q)*BetaObject.c5p
       elif q >= 0:
-         return -2. + (T/Tcp(p))*BetaObject.c5p
+         # return -2. + (T/Tcp(p))*BetaObject.c5p
+         return -2. + (T/Tcp(p))*np.exp(q)*BetaObject.c5p
     
    elif (key == "OFF") and (scOption_WS == "NO"):
        #return -2. + (T/Tcp(p))*BetaObject.c5p
+       print(" fudge_c looks like\n ", fudge_c,"\n")
        return -2. + (T/Tcp(p))*(fudge_c[4])*BetaObject.c5p
 
    if scOption_WS == "YES":
@@ -322,16 +337,68 @@ def beta5_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
 
 ########################################################################   
 ##
-#  \tilde{\beta}_{A}, \tilde{\beta}_{B}
+#  \tilde{\beta}_{A}, \tilde{\beta}_{B}, fA, fB, \Delta_{A}, \Delta_{B}
 #                                
 
 # \beta_A                                 
-def betaA_td(p, T): return beta2_td(p, T) + beta4_td(p, T) + beta5_td(p, T)
+def betaA_td(p, T, fudge_c=fc_arr): return beta2_td(p, T, fudge_c) + beta4_td(p, T, fudge_c) + beta5_td(p, T, fudge_c)
 
 # \beta_B                                 
-def betaB_td(p, T):
-    return (beta1_td(p, T) + beta2_td(p, T)
-            + (1./3.)*(beta3_td(p, T) + beta4_td(p, T) + beta5_td(p, T)))
+def betaB_td(p, T, fudge_c=fc_arr):
+    return (beta1_td(p, T, fudge_c) + beta2_td(p, T, fudge_c)
+            + (1./3.)*(beta3_td(p, T, fudge_c) + beta4_td(p, T, fudge_c) + beta5_td(p, T, fudge_c)))
+
+# bulk fA, with order parameter (\Delta/sqrt(2))*x_alpha*(x_i + i*y_i)
+def fA(p, T):
+   '''Bulk GL free energy of uniform A phase.
+
+   order parameter is (\Delta/sqrt(2))*x_alpha*(x_i + i*y_i)'''
+   J = 1.; Kelvin = 1.
+   kb = 1.380649*(10**(-23))*J*(Kelvin**(-1))
+
+   pno_tuple = pno();pnoa = pno_tuple[0];pnob = pno_tuple[1]
+
+   coef = -(pnoa**2)/(4.*pnob)
+
+   return coef*((kb*Tcp(p))**2)*N0(p)*((alpha_td(p, T)*alpha_td(p, T))/betaA_td(p, T))
+
+# bulk fB, with order parameter (\Delta/sqrt(3))*\delta_{a,i}
+def fB(p, T):
+   '''Bulk GL free energy of uniform B phase.
+
+   order parameter is (\Delta/sqrt(3))*\delta_{a,i}'''
+   J = 1.; Kelvin = 1.
+   kb = 1.380649*(10**(-23))*J*(Kelvin**(-1))
+
+   pno_tuple = pno();pnoa = pno_tuple[0];pnob = pno_tuple[1]
+
+   coef = -(pnoa**2)/(4.*pnob)
+
+   return coef*((kb*Tcp(p))**2)*N0(p)*((alpha_td(p, T)*alpha_td(p, T))/betaB_td(p, T))
+
+def GapA(p, T):
+   '''\Delta_{A}(p, T) for uniform A phase.'''
+   J = 1.; Kelvin = 1.
+   kb = 1.380649*(10**(-23))*J*(Kelvin**(-1))
+
+   pno_tuple = pno();pnoa = pno_tuple[0];pnob = pno_tuple[1]
+
+   coef = -(1./2.)*(pnoa/pnob)
+
+   return np.sqrt(coef*((kb*Tcp(p))**2)*(alpha_td(p, T)/betaA_td(p, T)))
+
+def GapB(p, T):
+   '''\Delta_{B}(p, T) for uniform B phase.'''
+   J = 1.; Kelvin = 1.
+   kb = 1.380649*(10**(-23))*J*(Kelvin**(-1))
+
+   pno_tuple = pno();pnoa = pno_tuple[0];pnob = pno_tuple[1]
+
+   coef = -(1./2.)*(pnoa/pnob)
+
+   return np.sqrt(coef*((kb*Tcp(p))**2)*(alpha_td(p, T)/betaB_td(p, T)))
+
+   
 
 
 ########################################################################
@@ -396,19 +463,19 @@ def tAB_WS15(p):
      
 
 # correccted tAB from RWS19 SC, only work when SC_Correction_Switch == "NO"
-def tAB_RWSco(p, fudge_c):
+def tAB_RWSco(p):
    
-   # if SC_Correction_Switch == "ON":
-   if SC_Correction_Switch == "OFF":
+   if SC_Correction_Switch == "ON":
+   #if SC_Correction_Switch == "OFF":
       # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
       # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
       # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
       # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-      # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
+      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
       # q = 0.9
 
-      # tab_rwsco = np.exp(-q)*tAB_RWS(p)
-      tab_rwsco = (q)*tAB_RWS(p)
+      tab_rwsco = np.exp(-q)*tAB_RWS(p)
+      # tab_rwsco = (q)*tAB_RWS(p)
 
       if (tab_rwsco <= 1.) and (tab_rwsco > 0.):
          return tab_rwsco
