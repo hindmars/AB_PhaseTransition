@@ -60,14 +60,26 @@ and invoking the method  quartic_params_init. See accompanying file critical_bub
 
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from scipy.optimize import newton_krylov
 from scipy.integrate import solve_ivp
 import scipy.optimize.nonlin
+import scipy.linalg as sl
 
 import he3_tools as  h
 
+# Stiffness parameter for configurations dependinng only on x
 Kxx = np.diag([3,1,1]) 
+
+# Various standard boundary conditions
+bc_dir = [np.array([1,1,1]), np.array([0,0,0])]
+bc_neu = [np.array([0,0,0]), np.array([1,1,1])]
+bc_rob = [np.array([1,1,1]), np.array([1,1,1])]
+bc_min_pb = [np.array([1,0,0]), np.array([0,1,1])]
+bc_med_pb = [np.array([1,1,1]), -np.array([0,1,1])]
+bc_max_pb = bc_dir
+bcleft = 0
+bcright = -1
 
 class material_paramset:
     """
@@ -121,6 +133,14 @@ class material_paramset:
             xiGL = h.xiGL_const/np.sqrt(-self.alpha)
         return xiGL
 
+    def xi0(self):
+        """Ginzburg Landau correlation length.
+        """
+        if self.p is not None:
+            xiGL = h.xi(0, self.p)
+        else:
+            xiGL = h.xiGL_const
+        return xiGL
 
 class quartic_potential:
     """ 
@@ -214,11 +234,127 @@ def field_eqn(phi, pot, gr):
     
     # Need to sort out gradient term
 
-    second = (phi_plus + phi_minus - 2*phi)/gr.dx2
-    first = np.matmul((phi_plus  - phi_minus) , np.multiply.outer(1/(gr.x + gr.x_minus), h.id3))
-    first *= (gr.dim - 1)/gr.dx
+    second = (phi_plus + phi_minus - 2*phi)/gr.dx2 
+    if gr.dim > 1:
+        first = np.matmul((phi_plus  - phi_minus) , 
+                          np.multiply.outer(1/(gr.x + gr.x_minus), h.id3))
+        first *= (gr.dim - 1)/gr.dx
+        derivs = second + first
+    else:
+        derivs = second
+        
+    return np.matmul(Kxx, derivs) - pot.v_prime(phi)
+
+def find_boundary_condition(bcs, boundary):
+    a1 = bcs[boundary][0]
+    a2 = bcs[boundary][1]
+    dirichlet = (a2 == 0)
+    neumann = (a1 == 0)
+    robin = np.logical_not(np.logical_or(dirichlet, neumann))
+    return dirichlet, neumann, robin    
+
+def boundary_condition(A, bcs, boundary, grid):
     
-    return np.matmul(Kxx, second + first) - pot.v_prime(phi)
+    dirichlet, neumann, robin = find_boundary_condition(bcs, boundary)
+
+    if boundary == bcleft:
+        neighbour = 1
+    elif boundary == bcright:
+        neighbour = -2
+    else:
+        raise ValueError("boundary must be 0 (left) or -1 (right)")
+
+    if np.any(dirichlet):
+        A[boundary, :, dirichlet] = 0
+    
+    # Following should be incorporated into shifted phi, as they involve derivatives?
+    # if np.any(neumann):
+    #     A[boundary, :, neumann] = A[neighbour, :, neumann] 
+    # if np.any(robin):
+    #     a1 = bcs[boundary][0]
+    #     a2 = bcs[boundary][1]
+    #     A[boundary, :, robin] = A[neighbour, :, robin] / (1 - grid.dx * (a1[robin]/a2[robin]))
+    
+    return A
+
+def phi_shift(phi, direction, gr, bcs=[bc_neu, bc_neu]):
+    
+    phi_shift = np.roll(phi,-direction, axis=0)
+    
+    if direction == +1:
+        boundary = bcright
+    elif direction == -1:
+        boundary = bcleft
+    else:
+        raise ValueError('phi_shift direction must be +1 or -1')
+    
+    a1 = bcs[boundary][0]
+    a2 = bcs[boundary][1]
+    dirichlet = (a2 == 0)
+    neumann = (a1 == 0)
+    robin = np.logical_not(np.logical_or(dirichlet, neumann))
+
+    if boundary == bcleft:
+        neighbour = 1
+    elif boundary == bcright:
+        neighbour = -2
+    else:
+        raise ValueError("boundary must be 0 (left) or -1 (right)")
+
+    if np.any(dirichlet):
+        # phi_shift[boundary, :, dirichlet] = phi[boundary, :, dirichlet] - phi[neighbour, :, dirichlet]
+        # Assumes Dirichlet BC is phi = 0
+        phi_shift[boundary, :, dirichlet] =  - phi[neighbour, :, dirichlet]
+    if np.any(neumann):
+        phi_shift[boundary, :, neumann] = phi[neighbour, :, neumann]
+    if np.any(robin):
+        a12 = a1[robin]/a2[robin]
+        factor_shape_21 = ((1 + a12*gr.dx)/(1 - a12*gr.dx))[:,None]
+        phi_shift[boundary, :, robin] = phi[neighbour, :, robin]*factor_shape_21
+
+    return phi_shift
+
+
+def field_eqn_with_bcs(phi, pot, gr, bcs=[bc_neu, bc_neu]):
+    """
+    GL field equation in 1 radial dimension
+    """
+    
+    # phi_plus = np.roll(phi,-1, axis=0)
+    # phi_minus = np.roll(phi,+1, axis=0)
+    # phi_plus[-1] = phi[-2]
+    # phi_minus[0] = phi[1]
+    phi_plus = phi_shift(phi, +1, gr, bcs)
+    phi_minus = phi_shift(phi, -1, gr, bcs)
+    
+    phi = boundary_condition(phi, bcs, bcleft, gr)
+    phi = boundary_condition(phi, bcs, bcright, gr)
+    # phi_plus = phi_shift(phi, +1, bcs)
+    # phi_minus = phi_shift(phi, -1, bcs)
+    # else:
+    #     phi_plus = np.roll(phi,-1, axis=0)
+    #     phi_minus = np.roll(phi,+1, axis=0)
+    #     phi_plus[-1] = phi[-2]
+    #     phi_minus[0] = phi[1]
+        
+    second = (phi_plus + phi_minus - 2*phi)/gr.dx2 
+
+    # if bcs is not None:
+    #     second = boundary_condition(second, bcs, bcleft, gr)
+    #     second = boundary_condition(second, bcs, bcright, gr)
+
+    if gr.dim > 1:
+        first = np.matmul((phi_plus  - phi_minus) , 
+                          np.multiply.outer(1/(gr.x + gr.x_minus), h.id3))
+        first *= (gr.dim - 1)/gr.dx
+        # if bcs is not None:
+        #     first = boundary_condition(first, bcs, bcleft, gr)
+        #     first = boundary_condition(first, bcs, bcright, gr)
+        derivs = second + first
+    else:
+        derivs = second
+        
+    return np.matmul(Kxx, derivs) - pot.v_prime(phi)
 
 
 def initial_condition(pot, gr, D=None):
@@ -251,22 +387,99 @@ def initial_condition(pot, gr, D=None):
         
     return A_init
 
-
-def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False):
+def expm_vec(x, T):
+    """ Calculates exp(x * T), where T is a matrix and x an array.
+    Returns array with shape x.shape + T.shape.
     """
-    Apply Krylov solver to find unstable bubble solution. 
+    foo = np.zeros(x.shape + T.shape, dtype=complex)
+    for n,x in enumerate(x):
+        foo[n,:,:] = sl.expm(x * T )
+    return foo
+
+
+def apply_texture(A, gr, T_list, fun_list=[expm_vec]*3):
+    """ Applies textture by applying O(3) rotations and phase angle.
+    T_list[2] should be 1j*h.id3. 
+    signature of 3 functions in funlist should be (gr.x, T)
+    """
+    R_spin  = fun_list[0](2*np.pi*gr.x/gr.R, T_list[0])
+    R_angm  = fun_list[1](2*np.pi*gr.x/gr.R, T_list[1])
+    R_phase = fun_list[2](2*np.pi*gr.x/gr.R, T_list[2])
+    
+    return np.matmul(np.matmul(np.matmul(R_spin, A), R_angm), R_phase)
+
+
+def initial_condition_confine(pot, gr, wall_phase="Ay", bulk_phase="B", 
+                              bcs=[bc_dir, bc_dir],
+                              T_list=None,
+                              fun_list=[expm_vec]*3):
+    """
+    Initial guess for order parameter. Interpolates between wall and bulk 
+    phases over GL coherence length.  If RHS b.c. is Neumann, it is left in bulk phase.
+    Applies texture if T_list is none
+    """
+    
+    # bub = thin_wall_bubble(pot, dim=gr.dim)
+    
+    m = pot.mat_pars.xi0()/pot.mat_pars.xi()
+    k = m/2
+
+    w = gr.R
+    phi_init_left = np.tanh(k*gr.x)
+    phi_init_right = np.tanh(k*(w - gr.x))
+
+    phi_init = np.ones_like(gr.x)
+    proj = np.multiply.outer(np.ones_like(phi_init), h.id3)
+    # Test to see if we have dirichlet at boundaries, in which case we apply tanh profile there
+    
+    dch_l, _, _ = find_boundary_condition(bcs, bcleft)
+    dch_r, _, _ = find_boundary_condition(bcs, bcright)
+    
+    if np.any(dch_l):
+        print("Initial condition: Applyng Dir to left boundary")
+        phi_init *= phi_init_left
+        dch_l_vec = dch_l.astype(float)
+        not_dch_l_vec = np.logical_not(dch_l).astype(float)
+        proj_l = np.multiply.outer(phi_init_left, np.diag(dch_l_vec) ) + \
+            np.multiply.outer(np.ones_like(phi_init_left), np.diag(not_dch_l_vec) )  
+        proj = np.matmul(proj_l, proj)
+    if np.any(dch_r):
+        print("Initial condition: Applyng Dir to right boundary")
+        phi_init *= phi_init_right
+        dch_r_vec = dch_r.astype(float)
+        not_dch_r_vec = np.logical_not(dch_r).astype(float)
+        proj_r = np.multiply.outer(phi_init_right, np.diag(dch_r_vec) ) + \
+            np.multiply.outer(np.ones_like(phi_init_right), np.diag(not_dch_r_vec) )  
+        proj = np.matmul(proj_r, proj)
+
+    D = pot.mat_pars.delta_phase_norm(bulk_phase)*h.D_dict[bulk_phase] - \
+            pot.mat_pars.delta_phase_norm(wall_phase)*h.D_dict[wall_phase]
+    A_init = h.D_dict[wall_phase] * pot.mat_pars.delta_phase_norm(wall_phase) \
+            + np.multiply.outer(phi_init , D ) 
+
+    # Minimal pair-breaking inital condition (Dirichlet for normal component)
+    # proj = np.multiply.outer(phi_init, np.diag([1,0,0]) ) + \
+    #     np.multiply.outer(np.ones_like(phi_init), np.diag([0,1,1]) ) 
+
+    A_init = np.matmul(proj, A_init)
+    
+    if T_list is not None:
+        A_init = apply_texture(A_init, gr, T_list, fun_list)
+    
+    return A_init
+
+def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False, 
+                  verbose=True, maxiter=200):
+    """
+    Apply Krylov solver to find unstable bubble or wall (dim=1) solution. 
     
     Returns: order parameter phi, the potential object, and the grid object.
     """
     
 
-    # t = param[0]
-    # p = param[1]        
-    
     pot = quartic_potential(*args)
     
     gr = grid_1d(*gr_pars, dim=dim)
-    # bub = thin_wall_bubble(pot, dim=dim)
     
     phi_init = initial_condition(pot, gr)
     
@@ -274,23 +487,42 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False):
         return field_eqn(phi, pot, gr)
 
     try:
-        phi = newton_krylov(field_eqn_fix, phi_init, verbose=True, maxiter=200)
+        phi = newton_krylov(field_eqn_fix, phi_init, verbose=verbose, maxiter=maxiter)
     except scipy.optimize.nonlin.NoConvergence as e:
         phi = e.args[0]
         print('No Convergence')
 
-    # if display:
-        
-    #     plt.figure()
-    #     plt.plot(gr.x, phi_init/h.delta_wc, label='Thin wall') 
-    #     plt.plot(gr.x, phi/h.delta_wc, label='Final' )
-    #     plt.xlabel(r'$r$')
-    #     plt.ylabel(r'$\phi/\phi_{\rm b}$')
-    #     plt.xlim(0,gr.R)
-    #     plt.grid()
-    #     plt.legend()
+    return phi, pot, gr 
+
+
+def krylov_confine(*args, gr_pars=(200,20), dim=1, 
+                   wall_phase="Ay", bulk_phase="B", 
+                   bcs = [bc_min_pb, bc_min_pb], 
+                   T_list = None, **kwargs):
+    """
+    Apply Krylov solver to find solution in confined boundary conditions.
+    
+    Returns: order parameter phi, the potential object, and the grid object.
+    """
+    
+    pot = quartic_potential(*args)
+    gr = grid_1d(*gr_pars, dim=dim)
+    
+    phi_init = initial_condition_confine(pot, gr, 
+                                         wall_phase=wall_phase, bulk_phase=bulk_phase,
+                                         bcs=bcs, T_list=T_list)
+    
+    def field_eqn_fix(phi):
+        return field_eqn_with_bcs(phi, pot, gr, bcs)
+
+    try:
+        phi = newton_krylov(field_eqn_fix, phi_init, **kwargs)
+    except scipy.optimize.nonlin.NoConvergence as e:
+        phi = e.args[0]
+        print('No Convergence')
 
     return phi, pot, gr 
+
 
 def relax(t_eval, *args, gr_pars=(200,20), dim=1):
     """
@@ -303,7 +535,6 @@ def relax(t_eval, *args, gr_pars=(200,20), dim=1):
     pot = quartic_potential(*args)
     
     gr = grid_1d(*gr_pars, dim=dim)
-    # bub = thin_wall_bubble(pot, dim=dim)
     
     phi_init = initial_condition(pot, gr)
     
@@ -318,6 +549,31 @@ def relax(t_eval, *args, gr_pars=(200,20), dim=1):
     print(Asol.shape)
     return Asol.reshape(gr.n, 3, 3, len(t_eval)), pot, gr 
 
+
+def relax_from_ic(t_eval, phi_init, pot, gr, bcs):
+    """
+    Apply relaxation method to find domain wall solution. 
+    
+    Returns: order parameter phi with extra t dimension, the potential object, and the grid object.
+    """
+        
+    def field_eqn_vec(tau, phi_vec):
+        force_mat = field_eqn_with_bcs(h.vec2mat(phi_vec), pot, gr, bcs)
+        return h.mat2vec(force_mat)
+
+    tspan = [min(t_eval), max(t_eval)]
+    sol = solve_ivp(field_eqn_vec, tspan, h.mat2vec(phi_init), t_eval=t_eval)
+
+    Asol = sol.y
+    print(Asol.shape)
+    Asol = Asol.reshape(gr.n, 3, 3, len(t_eval))
+    print(Asol.shape)
+    Apg_list = []
+    for n,t in enumerate(t_eval):
+        Apg_list.append((Asol[:,:,:,n], pot, gr))
+    return Apg_list
+
+
 def energy_density(phi, pot, gr):
     phi_plus = np.roll(phi,-1, axis=0)
     phi_plus[-1] = phi[-2]
@@ -325,9 +581,29 @@ def energy_density(phi, pot, gr):
     first = (phi_plus  - phi)/gr.dx
     # Need to sort out gradient term
     eden_grad = h.tr(np.dot(first, Kxx) @ h.hconj(first) ).real
-    eden_pot = pot.v(phi)-pot.v(phi[-1])
+    eden_pot = pot.v(phi)
     
     return eden_grad + eden_pot, eden_grad, eden_pot
+
+def surface_energy(A, pot, gr, bcs=None):
+    """Calculates surface energy of configuration, relative to minimum energy density.
+    """
+    eden, eden_grad, eden_pot = energy_density(A, pot, gr)
+    en = np.trapz(eden - np.min(eden), gr.x)
+    
+    if bcs is None:
+        n_surface = 1
+    else:
+        dch, neu, rob = find_boundary_condition(bcs, bcright)
+    
+        if np.all(neu):
+            n_surface = 1
+        else:
+            n_surface = 2
+
+    # print("Surface energy called with n_surface =", n_surface)
+
+    return en/n_surface 
 
 def energy(phi, pot, gr):
 
@@ -347,7 +623,7 @@ def energy(phi, pot, gr):
     e_grad = vol_factor * np.trapz(eden_grad, gr.x**(gr.dim) )
     e_pot = vol_factor * np.trapz(eden_pot, gr.x**(gr.dim))
     
-    return e_grad + e_pot, e_grad, e_pot
+    return np.array([e_grad + e_pot, e_grad, e_pot])
 
 
 def action(phi, pot, gr):
@@ -367,4 +643,82 @@ def action(phi, pot, gr):
 
     return e_tot/scale, e_grad/scale, e_pot/scale
 
+
+def plot_eigs(A, pot, gr, bcs=None):
+    
+    t = pot.mat_pars.t
+    p = pot.mat_pars.p
+    eden, eden_grad, eden_pot = energy_density(A, pot, gr)
+    # sigma_tot = np.trapz(eden, gr.x)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
+    sigma_bw = surface_energy(A, pot, gr, bcs)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
+
+    fig, ax = plt.subplots(2,1, sharex='col')
+    # gridspec_kw={'hspace': 0, 'wspace': 0}
+    x =  gr.x * h.xi(0,p)/h.xi(t,p)
+    xmin = min(x)
+    xmax = max(x)
+    
+    w_mu = gr.R * h.xi(0,p)/1000
+    
+    ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm()) + 1)
+    
+    ax[0].set_ylabel(r'$e/|f_B| + 1$')
+    ax[0].grid()
+    ax[0].set_xlim(xmin, xmax)
+    tstring1 = r'p={:.1f} bar, $T={:.2f}$ mK, $w={:.2f} \;\mu$m'.format(p, t*h.Tc_mK(p), w_mu)
+    tstring2 = r'$\sigma_{{bw}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.3f}$, '.format(sigma_bw)
+    tstring3 = r'$A^\dagger A v_a = \lambda_a v_a}$'
+    ax[0].set_title(tstring1 + '\n' + tstring2 + tstring3 )
+    
+    #Now plot eigenvalues
+    eigs = h.eig_angm(A)
+    
+    norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
+    
+    ax[1].plot(x, eigs[:,0]/norm**2, label=r'$\lambda_1$')
+    ax[1].plot(x, eigs[:,1]/norm**2, label=r'$\lambda_2$')
+    ax[1].plot(x, eigs[:,2]/norm**2, label=r'$\lambda_3$')
+    
+    ax[1].set_xlim(xmin, xmax)
+    ax[1].legend(loc='best')
+    ax[1].grid()
+    ax[1].set_ylabel(r'$3\lambda_a/\Delta_B^2(T,p)$')
+    ax[1].set_xlabel(r'$x/\xi_{\rm GL}(T)$')
+
+    return ax
+
+
+def thuneberg_formula(t,p):
+    """Formula for AB interface free energy from Thuneberg PRB 1991.
+    """
+    beta1 = h.beta_norm(t,p,1)
+    beta2 = h.beta_norm(t,p,2)
+    beta3 = h.beta_norm(t,p,3)
+    beta45 = h.beta_norm(t,p,4) + h.beta_norm(t,p,5)
+    beta345 = beta3 + beta45
+
+    beta2_0 = beta1 + beta2 + beta345/2
+    
+    beta3_0 = beta2_0
+    beta1_0 = -beta2_0/2
+    beta34_0 = 2*beta2_0
+    
+    a = 2*beta1 + beta2 - beta45
+    c = -(2*beta1 + beta345)
+    
+    kappa = (beta3_0*(beta1_0 + 3*beta2_0)/(4*beta2_0*beta34_0))**0.5
+    I2 = 1.89 - 1.98*kappa**0.5 - 0.31*kappa
+    
+    if c > 0:
+        I1 = (a+c)**0.5 + (a/c**0.5)*np.log(((a+c)**0.5 + c**0.5)/a**0.5)
+    elif c < 0:
+        I1 = (a+c)**0.5 + (a/(-c)**0.5)*np.asin(((-c)**0.5)/a**0.5)
+    else:
+        c = np.nan
+    
+    
+    square_bracket_20 = I1/(2*beta2_0)**0.5 + \
+        0.5*I2*(4*a**2/(beta2_0*beta3_0*(beta1_0 + beta2_0)))**0.25
+        
+    return square_bracket_20*h.xi(t,p) * h.alpha_norm(t)**2/(4*beta2_0)
 
