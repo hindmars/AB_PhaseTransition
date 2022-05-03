@@ -206,8 +206,8 @@ def beta1_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
      # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
      # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
      # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
-     # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-     q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)  
+     q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
+     # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)  
 
      # print("\n q looks like ", q)
 
@@ -233,8 +233,8 @@ def beta2_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
       # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
       # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
-      # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
+      q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
+      # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
 
       if q < 0:
         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c2p
@@ -261,8 +261,8 @@ def beta3_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
       # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
       # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
-      # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
+      q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
+      # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
 
       if q < 0:
         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c3p
@@ -288,8 +288,8 @@ def beta4_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
       # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
       # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
-      # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4) 
+      q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
+      # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4) 
 
       if q < 0:
         return 2. + (T/Tcp(p))*np.exp(q)*BetaObject.c4p
@@ -315,8 +315,8 @@ def beta5_td(p, T, fudge_c=fc_arr, key=SC_Correction_Switch, scOption_WS=WimanSa
       # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
       # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
       # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
-      # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
+      q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
+      # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
 
       if q < 0:
         return -2. + (T/Tcp(p))*np.exp(q)*BetaObject.c5p
@@ -345,6 +345,7 @@ def betaA_td(p, T, fudge_c=fc_arr): return beta2_td(p, T, fudge_c) + beta4_td(p,
 
 # \beta_B                                 
 def betaB_td(p, T, fudge_c=fc_arr):
+    # print("\n fudge_c is ",fudge_c)
     return (beta1_td(p, T, fudge_c) + beta2_td(p, T, fudge_c)
             + (1./3.)*(beta3_td(p, T, fudge_c) + beta4_td(p, T, fudge_c) + beta5_td(p, T, fudge_c)))
 
@@ -470,8 +471,8 @@ def tAB_RWSco(p):
       # q = SC_CoEpoly_G.fit_q_f0x2(p, *SC_CoEpoly_G.popt0x2)
       # q = SC_CoEpoly_G.fit_q_f2(p, *SC_CoEpoly_G.popt2)
       # q = SC_CoEpoly_G.fit_q_f3(p, *SC_CoEpoly_G.popt3)
-      # q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
-      q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
+      q = SC_CoEpoly_G.fit_q_f6(p, *SC_CoEpoly_G.popt6)
+      # q = SC_CoEpoly_G.fit_q_f4(p, *SC_CoEpoly_G.popt4)
       # q = 0.9
 
       tab_rwsco = np.exp(-q)*tAB_RWS(p)
