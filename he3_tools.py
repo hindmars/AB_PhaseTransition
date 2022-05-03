@@ -594,6 +594,16 @@ def mass_B_norm(t, p, JC):
     return np.sqrt(m2)        
 
 
+def critical_radius(t, p, sigma_fun=0.95):
+    """Radius of critical bubble, in nm.  
+    Ideally will optionally use function to get 
+    surface tension. Uses approximation."""
+    if isinstance(sigma_fun, float):
+        sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
+    # elif isinstance(sigma_fun, function):
+    #     sigma_AB = sigma_fun(t,p)
+    
+    return sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
 
 
 def tr(A):
@@ -720,7 +730,7 @@ def eig_vals(A):
     return e_vals.reshape(A_shape[0:A_dim-2] + (3,))
 
 
-def eig_angm(A):
+def eig_orbital(A):
     """
     Extracts eigenvalues of array A^dagger A, relevant for angular momentum vectors
 
@@ -736,6 +746,33 @@ def eig_angm(A):
 
     """
     H = np.matmul(hconj(A), A)
+    H_dim = H.ndim
+    H_shape = H.shape
+    H_size = H.size
+    H_flatter = H.reshape(H_size//9, 3, 3)
+    e_vals = np.zeros((H_size//9, 3), dtype=float)
+    for n, H_el in enumerate(H_flatter):
+        e_vals[n,:] = sl.eigvals(H_el)
+    e_vals.sort()
+    return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
+
+
+def eig_spin(A):
+    """
+    Extracts eigenvalues of array A A^dagger, relevant for spin vectors
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    ndarray
+        shape (m,n,...,3).
+
+    """
+    H = np.matmul(A, hconj(A))
     H_dim = H.ndim
     H_shape = H.shape
     H_size = H.size

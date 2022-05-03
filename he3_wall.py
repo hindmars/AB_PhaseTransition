@@ -644,7 +644,7 @@ def action(phi, pot, gr):
     return e_tot/scale, e_grad/scale, e_pot/scale
 
 
-def plot_eigs(A, pot, gr, bcs=None):
+def plot_eigs(A, pot, gr, angm="orbital", bcs=None):
     
     t = pot.mat_pars.t
     p = pot.mat_pars.p
@@ -667,12 +667,18 @@ def plot_eigs(A, pot, gr, bcs=None):
     ax[0].set_xlim(xmin, xmax)
     tstring1 = r'p={:.1f} bar, $T={:.2f}$ mK, $w={:.2f} \;\mu$m'.format(p, t*h.Tc_mK(p), w_mu)
     tstring2 = r'$\sigma_{{bw}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.3f}$, '.format(sigma_bw)
-    tstring3 = r'$A^\dagger A v_a = \lambda_a v_a}$'
-    ax[0].set_title(tstring1 + '\n' + tstring2 + tstring3 )
     
     #Now plot eigenvalues
-    eigs = h.eig_angm(A)
-    
+    if angm=="orbital":
+        eigs = h.eig_orbital(A)
+        tstring3 = r'$A^\dagger A v_a = \lambda_a v_a}$, orbital'
+    elif angm=="spin":
+        eigs = h.eig_spin(A)
+        tstring3 = r'$A A^\dagger v_a = \lambda_a v_a}$, spin'
+    else:
+        raise ValueError("angm must be orbital or spin")
+        
+    ax[0].set_title(tstring1 + '\n' + tstring2 + tstring3 )
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
     
     ax[1].plot(x, eigs[:,0]/norm**2, label=r'$\lambda_1$')
