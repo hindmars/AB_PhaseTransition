@@ -70,9 +70,16 @@ T1arr1 = np.arange(2.058, 2.25, stp1)
 T1arr2 = np.arange(2.25, stp1+SC_beta.Tcp(29.3)*1000, stp1)
 # print(" \nT1arr1 looks like\n ", T1arr1)
 # print(" \nT1arr2 looks like\n ", T1arr2)
-                                                          
-T1_HEC_arr = np.append(T1arr1, T1arr2) 
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABQ1 = 25.370095287443853; TABQ1 = 2.143458570116102 # mK
+
+T1_HEC_arr = np.append(T1arr1, T1arr2)
+boolen_Q1 = T1_HEC_arr > TABQ1
+T1_HEC_arr = T1_HEC_arr[boolen_Q1]
+
 p1_arr = np.append(np.linspace(22.0626, 29.3, len(T1arr1)), 29.3*np.ones(T1arr2.shape))
+p1_arr = p1_arr[boolen_Q1]
 
 # print(" \nlength of p1_arr: ",len(p1_arr), " length of T1_HEC_arr: ", len(T1_HEC_arr))                                                      
 
@@ -83,9 +90,16 @@ T2arr1 = np.arange(2.102, 2.275, stp2)
 T2arr2 = np.arange(2.275, stp2+SC_beta.Tcp(29.3)*1000, stp1)
 # print(" \nT1arr1 looks like\n ", T1arr1)
 # print(" \nT1arr2 looks like\n ", T1arr2)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABQ2 = 24.43600969915881; TABQ2 = 2.1677548560249678 # mK
                                                           
-T2_HEC_arr = np.append(T2arr1, T2arr2) 
+T2_HEC_arr = np.append(T2arr1, T2arr2)
+boolen_Q2 = T2_HEC_arr > TABQ2
+T2_HEC_arr = T2_HEC_arr[boolen_Q2]
+
 p2_arr = np.append(np.linspace(21.5357, 29.3, len(T2arr1)), 29.3*np.ones(T2arr2.shape))
+p2_arr = p2_arr[boolen_Q2]
 
 # print(" \nlength of p2_arr: ",len(p2_arr), " length of T2_HEC_arr: ", len(T2_HEC_arr))
 
@@ -96,9 +110,16 @@ T3arr1 = np.arange(2.084, 2.285, stp3)
 T3arr2 = np.arange(2.285, stp3+SC_beta.Tcp(29.3)*1000, stp3)
 # print(" \nT1arr1 looks like\n ", T1arr1)
 # print(" \nT1arr2 looks like\n ", T1arr2)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABQ3 =  24.64062849593238; TABQ3 = 2.162728479519771 # mK
                                                           
-T3_HEC_arr = np.append(T3arr1, T3arr2) 
+T3_HEC_arr = np.append(T3arr1, T3arr2)
+boolen_Q3 = T3_HEC_arr > TABQ3
+T3_HEC_arr = T3_HEC_arr[boolen_Q3]
+
 p3_arr = np.append(np.linspace(21.696, 29.3, len(T3arr1)), 29.3*np.ones(T3arr2.shape))
+p3_arr = p3_arr[boolen_Q3]
 
 # print(" \nlength of p3_arr: ",len(p3_arr), " length of T3_HEC_arr: ", len(T3_HEC_arr))
 
@@ -109,25 +130,18 @@ T4arr1 = np.arange(2.121, 2.29, stp3)
 T4arr2 = np.arange(2.29, stp4+SC_beta.Tcp(29.3)*1000, stp4)
 # print(" \nT1arr1 looks like\n ", T1arr1)
 # print(" \nT1arr2 looks like\n ", T1arr2)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABQ4 =  23.857740367654966; TABQ4 = 2.1819963137662786 # mK
                                                           
-T4_HEC_arr = np.append(T4arr1, T4arr2) 
+T4_HEC_arr = np.append(T4arr1, T4arr2)
+boolen_Q4 = T4_HEC_arr > TABQ4
+T4_HEC_arr = T4_HEC_arr[boolen_Q4]
+
 p4_arr = np.append(np.linspace(20.919, 29.3, len(T4arr1)), 29.3*np.ones(T4arr2.shape))
+p4_arr = p4_arr[boolen_Q4]
 
 # print(" \nlength of p4_arr: ",len(p4_arr), " length of T4_HEC_arr: ", len(T4_HEC_arr))  
-
-
-##   >>>>>>>>>>>>>>>>   Q5 data     <<<<<<<<<<<<<<<<<        ##
-
-# stp5 = 0.001
-# T5arr1 = np.arange(2.121, 2.29, stp3)
-# T5arr2 = np.arange(2.29, stp3+SC_beta.Tcp(29.3)*1000, stp5)
-# # print(" \nT1arr1 looks like\n ", T1arr1)
-# # print(" \nT1arr2 looks like\n ", T1arr2)
-                                                          
-# T5_HEC_arr = np.append(T5arr1, T5arr2) 
-# p5_arr = np.append(np.linspace(20.919, 29.3, len(T5arr1)), 29.3*np.ones(T5arr2.shape))
-
-# print(" \nlength of p5_arr: ",len(p5_arr), " length of T5_HEC_arr: ", len(T5_HEC_arr))
 
 Tarr_constQ_list = [T1_HEC_arr, T2_HEC_arr, T3_HEC_arr, T4_HEC_arr]
 parr_constQ_list = [p1_arr, p2_arr, p3_arr, p4_arr]
@@ -146,9 +160,17 @@ TO1arr3 = np.arange(2.14+stpO1, stpO1+SC_beta.Tcp(29.3)*1000, stpO1)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
-                                                          
-TO1_HEC_arr = np.append(np.append(TO1arr1, TO1arr2), TO1arr3) 
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO11 =  25.51887445887446; TABO11 = 2.1395579268292684 # mK
+                                                         
+TO1_HEC_arr = np.append(np.append(TO1arr1, TO1arr2), TO1arr3)
+boolen_O11 = TO1_HEC_arr > TABO11
+TO1_HEC_arr = TO1_HEC_arr[boolen_O11]
+
+
 pO1_arr = np.append(np.append(23.*np.ones(TO1arr1.shape), np.linspace(23., 29.3, len(TO1arr2))), 29.3*np.ones(TO1arr3.shape))
+pO1_arr = pO1_arr[boolen_O11]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))
 
@@ -161,9 +183,16 @@ TO2arr3 = np.arange(2.05+stpO2, stpO2+SC_beta.Tcp(29.3)*1000, stpO2)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO12 =  28.782770562770562; TABO12 = 2.0536204268292684 # mK
                                                           
-TO2_HEC_arr = np.append(np.append(TO2arr1, TO2arr2), TO2arr3) 
+TO2_HEC_arr = np.append(np.append(TO2arr1, TO2arr2), TO2arr3)
+boolen_O12 = TO2_HEC_arr > TABO12
+TO2_HEC_arr = TO2_HEC_arr[boolen_O12]
+
 pO2_arr = np.append(np.append(25.*np.ones(TO2arr1.shape), np.linspace(25., 29.3, len(TO2arr2))), 29.3*np.ones(TO2arr3.shape))
+pO2_arr = pO2_arr[boolen_O12]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))             
 
@@ -176,9 +205,17 @@ TO3arr3 = np.arange(2.15+stpO3, stpO3+SC_beta.Tcp(29.3)*1000, stpO3)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO13 =  25.055151515151515; TABO13 = 2.1517149390243904 # mK
                                                           
-TO3_HEC_arr = np.append(np.append(TO3arr1, TO3arr2), TO3arr3) 
+TO3_HEC_arr = np.append(np.append(TO3arr1, TO3arr2), TO3arr3)
+boolen_O13 = TO3_HEC_arr > TABO13
+TO3_HEC_arr = TO3_HEC_arr[boolen_O13]
+
+
 pO3_arr = np.append(np.append(21.*np.ones(TO3arr1.shape), np.linspace(21., 29.3, len(TO3arr2))), 29.3*np.ones(TO3arr3.shape))
+pO3_arr = pO3_arr[boolen_O13]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))             
 
@@ -191,9 +228,16 @@ TO4arr3 = np.arange(1.951+stpO4, stpO4+SC_beta.Tcp(29.3)*1000, stpO4)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO14 =  29.3; TABO14 = 2.039786585365854 # mK
                                                           
-TO4_HEC_arr = np.append(TO4arr2, TO4arr3) 
+TO4_HEC_arr = np.append(TO4arr2, TO4arr3)
+boolen_O14 = TO4_HEC_arr > TABO14
+TO4_HEC_arr = TO4_HEC_arr[boolen_O14]
+
 pO4_arr = np.append(np.linspace(24.865, 29.3, len(TO4arr2)), 29.3*np.ones(TO4arr3.shape))
+pO4_arr = pO4_arr[boolen_O14]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))
 
@@ -206,9 +250,16 @@ TO5arr3 = np.arange(1.901+stpO5, stpO5+SC_beta.Tcp(29.3)*1000, stpO5)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
-                                                          
-TO5_HEC_arr = np.append(TO5arr2, TO5arr3) 
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO15 =  29.3; TABO15 = 2.039786585365854 # mK
+
+TO5_HEC_arr = np.append(TO5arr2, TO5arr3)
+boolen_O15 = TO5_HEC_arr > TABO15
+TO5_HEC_arr = TO5_HEC_arr[boolen_O15]
+
 pO5_arr = np.append(np.linspace(27., 29.3, len(TO5arr2)), 29.3*np.ones(TO5arr3.shape))
+pO5_arr = pO5_arr[boolen_O15]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))
 
@@ -221,9 +272,17 @@ TO6arr3 = np.arange(2.+stpO6, stpO6+SC_beta.Tcp(29.3)*1000, stpO6)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO16 =  29.3; TABO16 = 2.039786585365854 # mK
                                                           
-TO6_HEC_arr = np.append(np.append(TO6arr1, TO6arr2), TO6arr3) 
+TO6_HEC_arr = np.append(np.append(TO6arr1, TO6arr2), TO6arr3)
+boolen_O16 = TO6_HEC_arr > TABO16
+TO6_HEC_arr = TO6_HEC_arr[boolen_O16]
+
+
 pO6_arr = np.append(np.append(27.*np.ones(TO6arr1.shape), np.linspace(27., 29.3, len(TO6arr2))), 29.3*np.ones(TO6arr3.shape))
+pO6_arr = pO6_arr[boolen_O16]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))             
 
@@ -236,9 +295,16 @@ TO7arr3 = np.arange(2.08+stpO7, stpO7+SC_beta.Tcp(29.3)*1000, stpO7)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
+
+# TAb point digtized from the plot in cornell's manuscript 
+pABO17 =  27.6591341991342; TABO17 = 2.0829649390243903 # mK
                                                           
-TO7_HEC_arr = np.append(np.append(TO7arr1, TO7arr2), TO7arr3) 
+TO7_HEC_arr = np.append(np.append(TO7arr1, TO7arr2), TO7arr3)
+boolen_O17 = TO7_HEC_arr > TABO17
+TO7_HEC_arr = TO7_HEC_arr[boolen_O17]
+
 pO7_arr = np.append(np.append(24.*np.ones(TO7arr1.shape), np.linspace(24., 29.3, len(TO7arr2))), 29.3*np.ones(TO7arr3.shape))
+pO7_arr = pO7_arr[boolen_O17]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))
 

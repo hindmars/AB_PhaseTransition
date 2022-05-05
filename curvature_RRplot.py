@@ -201,6 +201,9 @@ print(" \n Rcrit_O2_min ", Rcrit_O2_min)
 ##                        data plot                             ##
 ##################################################################
 
+##################################################################
+##        >>>>>>>>>>>>>>  curvature plot  <<<<<<<<<<<<<         ##
+
 fig, ax = plt.subplots(1, 1)
 mSize = 90
 unitC = 10**(-3) # nm to micron
@@ -208,24 +211,61 @@ unitC = 10**(-3) # nm to micron
 s1 = ax.scatter(1/(unitC*Rcrit_constp_min[0:(37-3)]), 1/(unitC*Rcrit_HEC_constp[0:(39-5)]), color = "green", marker = "s", s = mSize+10, label="Const-p, HEC")
 s2 = ax.scatter(1/(unitC*Rcrit_constp_min[0:(37-3)]), 1/(unitC*Rcrit_IC_constp[0:(39-5)]), color = "orange", marker = "o", s = mSize, label="Const-p, IC")
 
-s3 = ax.scatter(1/(unitC*Rcrit_constQ_min), 1/(unitC*Rcrit_IC_constQ), color = "red", marker = "h", s = mSize+40, label="Const-Q, IC")
+s3 = ax.scatter(1/(unitC*Rcrit_constQ_min), 1/(unitC*Rcrit_IC_constQ), color = "red", marker = "h", s = mSize+80, label="Const-Q, IC")
 s4 = ax.scatter(1/(unitC*Rcrit_constQ_min), 1/(unitC*Rcrit_HEC_constQ), color = "c", marker = "P", s = mSize, label="Const-Q, HEC")
 
 s5 = ax.scatter(1/(unitC*Rcrit_O1_min), 1/(unitC*Rcrit_IC_O1), color = "turquoise", marker = "v", s = mSize+20, label="other-1, IC")
 s6 = ax.scatter(1/(unitC*Rcrit_O1_min), 1/(unitC*Rcrit_HEC_O1), color = "violet", marker = "*", s = mSize, label="other-1, HEC")
 
-print(" \n Rcrit_IC_O1[0:2] ", Rcrit_IC_O1[0:2])
-s7 = ax.scatter(1/(unitC*Rcrit_O2_min), 1/(unitC*Rcrit_IC_O1[0:2]), color = "plum", marker = "d", s = mSize+20, label="other-2, IC")
-s8 = ax.scatter(1/(unitC*Rcrit_O2_min), 1/(unitC*Rcrit_HEC_O1[0:2]), color = "indigo", marker = "+", s = mSize, label="other-2, HEC")
+# print(" \n Rcrit_IC_O1[0:2] ", Rcrit_IC_O1[0:2])
+# s7 = ax.scatter(1/(unitC*Rcrit_O2_min), 1/(unitC*Rcrit_IC_O1[0:2]), color = "plum", marker = "d", s = mSize+20, label="other-2, IC")
+# s8 = ax.scatter(1/(unitC*Rcrit_O2_min), 1/(unitC*Rcrit_HEC_O1[0:2]), color = "indigo", marker = "+", s = mSize, label="other-2, HEC")
 
 
-ax.set_xlabel(r"$R^{-1(A)}_{crit}/{\mu}m^{-1}$", fontsize=20.0)
-ax.set_ylabel(r"$R^{-1(B)}_{crit}/{\mu}m^{-1}$", fontsize=20.0)
+ax.set_xlabel(r"${\kappa}^{(A)}_{crit}/{\mu}m^{-1}$", fontsize=20.0)
+ax.set_ylabel(r"${\kappa}^{(B)}_{crit}/{\mu}m^{-1}$", fontsize=20.0)
 # ax.set_xlim([0.0, 0.6])
 # ax.set_ylim([0.0, 1.5])
 plt.xticks(fontsize=15.)
 plt.yticks(fontsize=15.)
 ax.grid(True)
-leg = ax.legend([s1, s2, s3, s4, s5, s6, s7, s8],["Const-p, HEC", "Const-p, IC", "Const-Q, IC", "Const-Q, HEC", "Others-1, IC","Others-1, HEC", "Others-2, IC","Others-2, HEC"], fontsize=15.0, loc='lower right')
+# leg = ax.legend([s1, s2, s3, s4, s5, s6, s7, s8],["Const-p, HEC", "Const-p, IC", "Const-Q, IC", "Const-Q, HEC", "Others-1, IC","Others-1, HEC", "Others-2, IC","Others-2, HEC"], fontsize=15.0, loc='lower right')
+leg = ax.legend([s1, s2, s3, s4, s5, s6],["Const-p, HEC", "Const-p, IC", "Const-Q, IC", "Const-Q, HEC", "Others-1, IC","Others-1, HEC"], fontsize=15.0, loc='upper left')
+
+plt.show()
+
+####################################################################
+##             >>>>>>>>>>>>>>  radius plot  <<<<<<<<<<<<          ##
+
+fig1, ax1 = plt.subplots(1,1)
+
+mSize = 90
+unitC = 10**(-3) # nm to micron
+
+ss1 = ax1.scatter(unitC*Rcrit_constp_min[0:(37-3)], unitC*Rcrit_HEC_constp[0:(39-5)], color = "green", marker = "s", s = mSize+10, label="Const-p, HEC")
+ss2 = ax1.scatter(unitC*Rcrit_constp_min[0:(37-3)], unitC*Rcrit_IC_constp[0:(39-5)], color = "orange", marker = "o", s = mSize, label="Const-p, IC")
+
+print(" \n  unitC*Rcrit_IC_constQ = ", unitC*Rcrit_IC_constQ, " \n unitC*Rcrit_HEC_constQ ", unitC*Rcrit_HEC_constQ)
+ss3 = ax1.scatter(unitC*Rcrit_constQ_min, unitC*Rcrit_IC_constQ, color = "red", marker = "h", s = mSize+50, label="Const-Q, IC")
+ss4 = ax1.scatter(unitC*Rcrit_constQ_min, unitC*Rcrit_HEC_constQ, color = "c", marker = "P", s = mSize, label="Const-Q, HEC")
+
+ss5 = ax1.scatter(unitC*Rcrit_O1_min, unitC*Rcrit_IC_O1, color = "turquoise", marker = "v", s = mSize+20, label="other-1, IC")
+ss6 = ax1.scatter(unitC*Rcrit_O1_min, unitC*Rcrit_HEC_O1, color = "violet", marker = "*", s = mSize, label="other-1, HEC")
+
+# # print(" \n Rcrit_IC_O1[0:2] ", Rcrit_IC_O1[0:2])
+# ss7 = ax1.scatter(unitC*Rcrit_O2_min, unitC*Rcrit_IC_O1[0:2], color = "plum", marker = "d", s = mSize+20, label="other-2, IC")
+# ss8 = ax1.scatter(unitC*Rcrit_O2_min, unitC*Rcrit_HEC_O1[0:2], color = "indigo", marker = "+", s = mSize, label="other-2, HEC")
+
+
+ax1.set_xlabel(r"$R^{(A)}_{crit}/{\mu}m$", fontsize=20.0)
+ax1.set_ylabel(r"$R^{(B)}_{crit}/{\mu}m$", fontsize=20.0)
+ax1.set_xlim([0.0, 50])
+ax1.set_ylim([0.0, 7])
+plt.xticks(fontsize=15.)
+plt.yticks(fontsize=15.)
+ax1.grid(True)
+# leg = ax1.legend([ss1, ss2, ss3, ss4, ss5, ss6, ss7, ss8],["Const-p, HEC", "Const-p, IC", "Const-Q, IC", "Const-Q, HEC", "Others-1, IC","Others-1, HEC", "Others-2, IC","Others-2, HEC"], fontsize=15.0, loc='lower right')
+leg = ax1.legend([ss1, ss2, ss3, ss4, ss5, ss6],["Const-p, HEC", "Const-p, IC", "Const-Q, IC", "Const-Q, HEC", "Others-1, IC","Others-1, HEC"], fontsize=15.0, loc='lower right')
+
 
 plt.show()
