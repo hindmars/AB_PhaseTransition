@@ -106,7 +106,7 @@ p3_arr = np.append(np.linspace(21.696, 29.3, len(T3arr1)), 29.3*np.ones(T3arr2.s
 
 stp4 = 0.001
 T4arr1 = np.arange(2.121, 2.29, stp3)
-T4arr2 = np.arange(2.29, stp3+SC_beta.Tcp(29.3)*1000, stp4)
+T4arr2 = np.arange(2.29, stp4+SC_beta.Tcp(29.3)*1000, stp4)
 # print(" \nT1arr1 looks like\n ", T1arr1)
 # print(" \nT1arr2 looks like\n ", T1arr2)
                                                           
@@ -302,7 +302,7 @@ parr_other2_list = [pO21_arr, pO22_arr, pO23_arr]
 def arr_generator_other_2(no, Tarrl = Tarr_other2_list, parrl = parr_other2_list):
   '''Interface for handling arries generations for Other-1 
 
-  *no* represnets the series number of datas. no could be 1,2,3,4,5,6,7.
+  *no* represnets the series number of datas. no could be 1,2,3.
   '''
   print(" \n len of Tarrl ", len(Tarrl))
   return parrl[no-1], Tarrl[no-1]
