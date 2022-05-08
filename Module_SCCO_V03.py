@@ -24,14 +24,14 @@
 
 # author: quang. zhang (github@timohyva)
 
-# zeta3 = 1.2020569
-  
-#################################################################################################
-##'''          Regeon, Wiman & Sauls 2019 SC calculation, PRB. 101. 024517
-#
 
 import numpy as np
 # import numpy.polynomial.polynomial.Polynomial as npPoly
+  
+#################################################################################################
+##  >>>>>>>>>     Regeon, Wiman & Sauls 2019 SC calculation, PRB. 101. 024517   <<<<<<<<<<<    ##
+#################################################################################################
+#
 
 # data sheet from talbe.II of PRB. 101. 024517
 P = np.arange(0.0, 36.0, 2.0) # pressure date, step 2.0 bar
@@ -52,12 +52,16 @@ c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660, -0
 
 # c5 = [0.16, 0.19, 0.19, 0.18, 0.17, 0.15, 0.13, 0.11, 0.10, 0.09, 0.07, 0.06, 0.04, 0.03, 0.01, -0.01, -0.02, -0.03]
 
+# Greywall 1986 Temperature scale
 Tc = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.486]
+
 Ms = [2.80, 3.05, 3.27, 3.48, 3.68, 3.86, 4.03, 4.20, 4.37, 4.53, 4.70, 4.86, 5.02, 5.18, 5.34, 5.50, 5.66, 5.82] # in unit of helium-3 atom
 VF = [59.03, 55.41, 52.36, 49.77, 47.56, 45.66, 44.00, 42.51, 41.17, 39.92, 38.74, 37.61, 36.53, 35.50, 34.53, 33.63, 32.85, 32.23]
 XI0 = [77.21, 57.04, 45.85, 38.77, 33.91, 30.37, 27.66, 25.51, 23.76, 22.29, 21.03, 19.94, 18.99, 18.15, 17.41, 16.77, 16.22, 15.76] # in unit of nm (10^-9 m)
 
+
 ###################################################################################################
+##                                                                                              ###
 ##'''     Wiman, Sauls 2015 SC-Choi-experiment hybrided SC corrections, prb 92, 144515 (2015)   ###
 ##                                                                                              ###
 ##         \Delta{\beta_i^{sc}}/|beta_1^{wc}| = a_n^{i} p^{n}, p in bar                         ###
@@ -89,15 +93,22 @@ b5sc_poly = np.polynomial.Polynomial(a5sc)
 
 
 ##################################################################################################
+##       >>>>>>>>>>>>>>>>>>  RWS 2019 SC correction intepolation object <<<<<<<<<<<<<<<<<<      ##
+##################################################################################################
          
 class BETA:
+     '''Class defination of object for intepolating the basic qulities of He3 SF.
 
+     The temperature scale is Greywall-1986, while the strong coupling correction is RWS-2019.
+
+     If one would like to use PLTS 2000 temperature scale, the polynomial implement of PLTS in
+     module SC_beta_V05 should be called.
+     '''
      # class of beta object
     
-
      def __init__(self,name):
          self.name = name
-         print(" beta oject is crated ")
+         print(" SC object is crated ")
 
      def c1_function(self,P,c1,pressure):
         self.c1p =  np.interp(pressure,P,c1)
