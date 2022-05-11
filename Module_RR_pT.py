@@ -12,7 +12,14 @@ import numpy as np
 import pandas as pd
 
 import Module_SC_Beta_V05 as SC_beta
+import he3_tools_Vn01 as hn
 
+
+#############################################################
+##                    turn on PLTS                         ##
+#############################################################
+
+SC_beta.turn_on_PLTS()
 
 #############################################################
 ##                Constant-p data source                   ##
@@ -53,9 +60,10 @@ for ip in np.arange(0,len(pressure), 1):
 # print(" \nTc_constp looks like\n ",Tc_constp, " \nafter filting\n ",Tc_constp[Tc_constp != 0.])
 # print(" \np_arr looks like\n ", p_constp_arr, " \nafter filting\n ",p_constp_arr[p_constp_arr != 0.])
 
-TAB_constp = 1000*TAB_constp[TAB_constp != 0.]
-Tc_constp = 1000*Tc_constp[Tc_constp != 0.]
-p_constp_arr = p_constp_arr[p_constp_arr != 0.]; # print(" \n length of p_constp_arr ", len(p_constp_arr))
+# convert Temperatures to PLTS scate
+# TAB_constp = hn.T_GtoPlts6_low_poly(1000*TAB_constp[TAB_constp != 0.])
+# Tc_constp = hn.T_GtoPlts6_low_poly(1000*Tc_constp[Tc_constp != 0.])
+# p_constp_arr = p_constp_arr[p_constp_arr != 0.]; # print(" \n length of p_constp_arr ", len(p_constp_arr))
 
 
 ###############################################################
@@ -319,14 +327,18 @@ parr_other1_list = [pO1_arr, pO2_arr, pO3_arr, pO4_arr, pO5_arr, pO6_arr, pO7_ar
 
 stpO21 = 0.0002
 TO21arr1 = np.arange(2.0106, SC_beta.TAB_RWSco(23.)*1000, stpO21)
-TO21arr2 = (SC_beta.TAB_RWSco(23.)*1000)*np.ones(100)
+TO21arr2 = (SC_beta.TAB_RWSco(23.)*1000)*np.ones(200)
 TO21arr3 = np.arange(SC_beta.TAB_RWSco(23.)*1000+stpO21, stpO21+SC_beta.Tcp(23.)*1000, stpO21)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
                                                           
-TO21_HEC_arr = np.append(np.append(TO21arr1, TO21arr2), TO21arr3) 
+TO21_HEC_arr = np.append(np.append(TO21arr1, TO21arr2), TO21arr3)
+boolen_O21 = ~(TO21_HEC_arr < (SC_beta.TAB_RWSco(23.)*1000))
+TO21_HEC_arr = TO21_HEC_arr[boolen_O21]
+
 pO21_arr = np.append(np.append(23.*np.ones(TO21arr1.shape), np.linspace(23., 27.5, len(TO21arr2))), 23.*np.ones(TO21arr3.shape))
+pO21_arr = pO21_arr[boolen_O21]
 
 # print(" \nlength of p1_arr: ",len(pO1_arr), " length of T1_HEC_arr: ", len(TO1_HEC_arr))
 
@@ -334,30 +346,38 @@ pO21_arr = np.append(np.append(23.*np.ones(TO21arr1.shape), np.linspace(23., 27.
 
 stpO22 = 0.0002
 TO22arr1 = np.arange(2.0617, SC_beta.TAB_RWSco(23.)*1000, stpO22)
-TO22arr2 = (SC_beta.TAB_RWSco(23.)*1000)*np.ones(100)
+TO22arr2 = (SC_beta.TAB_RWSco(23.)*1000)*np.ones(200)
 TO22arr3 = np.arange(SC_beta.TAB_RWSco(23.)*1000+stpO22, stpO22+SC_beta.Tcp(23.)*1000, stpO22)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
                                                           
-TO22_HEC_arr = np.append(np.append(TO22arr1, TO22arr2), TO22arr3) 
+TO22_HEC_arr = np.append(np.append(TO22arr1, TO22arr2), TO22arr3)
+boolen_O22 = ~(TO22_HEC_arr < (SC_beta.TAB_RWSco(23.)*1000))
+TO22_HEC_arr = TO22_HEC_arr[boolen_O22]
+
 pO22_arr = np.append(np.append(23.*np.ones(TO22arr1.shape), np.linspace(23., 26., len(TO22arr2))), 23.*np.ones(TO22arr3.shape))
+pO22_arr = pO22_arr[boolen_O22]
 
 
 #    >>>>>>>>>>>>>>>>>>>>   O2-3   <<<<<<<<<<<<<<<<<<<<<     ##
 
 stpO23 = 0.0002
 TO23arr1 = np.arange(2.0996, SC_beta.TAB_RWSco(23.)*1000, stpO23)
-TO23arr2 = (SC_beta.TAB_RWSco(23.)*1000)*np.ones(100)
+TO23arr2 = (SC_beta.TAB_RWSco(23.)*1000)*np.ones(200)
 TO23arr3 = np.arange(SC_beta.TAB_RWSco(23.)*1000+stpO23, stpO23+SC_beta.Tcp(23.)*1000, stpO23)
 # print(" \nTO1arr1 looks like\n ", TO1arr1)
 # print(" \nTO1arr2 looks like\n ", TO1arr2)
 # print(" \nTO1arr3 looks like\n ", TO1arr3)
                                                           
-TO23_HEC_arr = np.append(np.append(TO23arr1, TO23arr2), TO23arr3) 
-pO23_arr = np.append(np.append(23.*np.ones(TO23arr1.shape), np.linspace(23., 24.5, len(TO23arr2))), 23.*np.ones(TO23arr3.shape))
+TO23_HEC_arr = np.append(np.append(TO23arr1, TO23arr2), TO23arr3)
+boolen_O23 = ~(TO23_HEC_arr < (SC_beta.TAB_RWSco(23.)*1000))
+TO23_HEC_arr = TO23_HEC_arr[boolen_O23]
 
-Tarr_other2_list = [TO21_HEC_arr, TO22_HEC_arr, TO22_HEC_arr]
+pO23_arr = np.append(np.append(23.*np.ones(TO23arr1.shape), np.linspace(23., 24.5, len(TO23arr2))), 23.*np.ones(TO23arr3.shape))
+pO23_arr = pO23_arr[boolen_O23]
+
+Tarr_other2_list = [TO21_HEC_arr, TO22_HEC_arr, TO23_HEC_arr]
 parr_other2_list = [pO21_arr, pO22_arr, pO23_arr]
 
 
@@ -393,10 +413,10 @@ def arr_generator_constQ(no, Tarrl = Tarr_constQ_list, parrl = parr_constQ_list)
 def arr_generator_constp(no, TAB_arr = TAB_constp, Tc_arr = Tc_constp, p_Arr = p_constp_arr):
   '''Interface for handling arries generations for Const-p
 
-  *no* represnets the series number of datas. no couble be one integal between 1 and 37
+  *no* represnets the series number of datas. no couble be one integal between 1 and 39
   '''
   length = 200; 
-  T_arr = np.linspace(TAB_arr[no-1], Tc_arr[no-1], length)
+  T_arr = 1000*np.linspace(TAB_arr[no-1], Tc_arr[no-1], length)
   p_arr = p_Arr[no-1]*np.ones(T_arr.shape)
 
   return p_arr, T_arr
@@ -409,7 +429,9 @@ def get_data(key, no):
 
       "constp", "constQ", "others" and no is a int type number.
   
-  For using this interface, module named " Module_SC_Beta_V0 " is necessary.
+  return: p_arr, T_arr, T_arr in unit of mK
+  
+  For using this interface, module named " Module_SC_Beta_V05 " is necessary.
   '''
   if key == "constp": return arr_generator_constp(no)
 
