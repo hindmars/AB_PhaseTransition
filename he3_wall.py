@@ -3,7 +3,7 @@
 """
 Created on Thu Jun  3 15:20:44 2021
 
-@author: hindmars
+@author: hindmars; modified by timohyva@github
 """
 
 """
@@ -11,7 +11,7 @@ Simple routines for finding the critical bubble in He3 potential.
 Uses newton-krylov solver.
 
 Default potential is scaled so that: 
-    stable (broken) phase has order parameter phi = 1, 
+    stable (broken) phase has order parameter phi = 1 i.e., true vacuum (superfluid B-Phase)
     stable (broken) phase has potential = 0
     potential grows phi**4/4
 
@@ -357,6 +357,7 @@ def field_eqn_with_bcs(phi, pot, gr, bcs=[bc_neu, bc_neu]):
     return np.matmul(Kxx, derivs) - pot.v_prime(phi)
 
 
+
 def initial_condition(pot, gr, D=None):
     """
     Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub
@@ -364,6 +365,7 @@ def initial_condition(pot, gr, D=None):
     
     bub = thin_wall_bubble(pot, dim=gr.dim)
     
+
     m2 = 1/pot.mat_pars.xi()
     k = np.sqrt(m2/4)
 
@@ -372,6 +374,7 @@ def initial_condition(pot, gr, D=None):
         rb = gr.R/2
 
     phi_init = 0.25*(1 - np.tanh(k*(gr.x - rb)))*(1 + np.tanh(k*(gr.x + rb )))  
+
 
     if D is None:
         D = pot.mat_pars.delta_A_norm()*h.D_dict["A"] - pot.mat_pars.delta_B_norm()*h.D_dict["B"]
@@ -482,11 +485,13 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3, display=False,
     gr = grid_1d(*gr_pars, dim=dim)
     
     phi_init = initial_condition(pot, gr)
+
     
     def field_eqn_fix(phi):
         return field_eqn(phi, pot, gr)
 
     try:
+
         phi = newton_krylov(field_eqn_fix, phi_init, verbose=verbose, maxiter=maxiter)
     except scipy.optimize.nonlin.NoConvergence as e:
         phi = e.args[0]
@@ -525,6 +530,7 @@ def krylov_confine(*args, gr_pars=(200,20), dim=1,
 
 
 def relax(t_eval, *args, gr_pars=(200,20), dim=1):
+
     """
     Apply relaxation method to find domain wall solution. 
     
@@ -535,12 +541,14 @@ def relax(t_eval, *args, gr_pars=(200,20), dim=1):
     pot = quartic_potential(*args)
     
     gr = grid_1d(*gr_pars, dim=dim)
-    
+   
     phi_init = initial_condition(pot, gr)
+
     
     def field_eqn_vec(tau, phi_vec):
         force_mat = field_eqn(h.vec2mat(phi_vec), pot, gr)
         return h.mat2vec(force_mat)
+
 
     tspan = [min(t_eval), max(t_eval)]
     sol = solve_ivp(field_eqn_vec, tspan, h.mat2vec(phi_init), t_eval=t_eval)
@@ -548,6 +556,7 @@ def relax(t_eval, *args, gr_pars=(200,20), dim=1):
     Asol = sol.y
     print(Asol.shape)
     return Asol.reshape(gr.n, 3, 3, len(t_eval)), pot, gr 
+
 
 
 def relax_from_ic(t_eval, phi_init, pot, gr, bcs):
