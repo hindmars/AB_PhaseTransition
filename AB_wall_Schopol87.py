@@ -37,6 +37,7 @@ for n, t in enumerate(t_eval):
 
 A = Asols[:,:,:,-1]
 eden, eden_grad, eden_pot = hw.energy_density(A, pot, gr)
+
 x = (gr.x - max(gr.x)/2)* xi_ratio
 
 
@@ -50,7 +51,9 @@ ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm())/np.sqrt(5/3))
 ax[0].set_ylabel(r'$e/f_B\sqrt{5/3}$')
 ax[0].grid()
 ax[0].set_xlim(xmin, xmax)
+
 ax[0].set_title(r'AB boundary, $\sigma_{{AB}}/\xi_{{\rm GL}}^{{\rm OC}}(T)|f_B(T)| = {:.2f}$, relax method'.format(sigma_AB_arr[-1]))
+
 
 norm =  np.sqrt(3)/pot.mat_pars.delta_B_norm() 
 

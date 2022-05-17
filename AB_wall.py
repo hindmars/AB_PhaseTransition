@@ -73,4 +73,6 @@ Apg_kry, sigma_AB, ax = get_and_plot_wall(t,p)
 
 # sigma_AB = hw.energy(*Apg_kry)[0]*h.xi(0,p)/(abs(Apg_kry[1].mat_pars.f_B_norm())*h.xi(t,p))
 
+
 print('Pressure:', p, ', Surface energy:', sigma_AB)
+

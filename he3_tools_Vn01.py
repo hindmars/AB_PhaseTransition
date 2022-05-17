@@ -3,7 +3,7 @@
 """
 Created on Fri Sep 10 15:04:39 2021
 
-@author: hindmars;  
+@author: hindmars; updated by Quang (timohyva@github)
 """
 
 import numpy as np
@@ -15,37 +15,17 @@ import numpy.polynomial as nppoly
 
 cphy = c.physical_constants
 
-SET_T_SCALE= {"Greywall", "PLTS"}
 
 DEFAULT_T_SCALE="Greywall" 
 # DEFAULT_T_SCALE="PLTS" 
 
-SET_SC_CORRS= {"RWS19", "Wiman-thesis", "Choi"}
 DEFAULT_SC_CORRS="RWS19"
 # DEFAULT_SC_CORRS="Wiman-thesis"
 # DEFAULT_SC_CORRS="Choi"
 
 
-# Do we want to adjust the SC corrections to get TAB right?
-SET_SC_ADJUST = {True, False}
-DEFAULT_SC_ADJUST=False
-
-# Polynomial for adjusting SC corrections to fit TAB data
-# Gets redefined later on if DEFAULT_SC_ADJUST==True.
-sc_corr_pol = nppoly.Polynomial([0])
-
-def report_setting(name):
-    xval = globals()[name]
-    print("he3_tools:", type(xval), "variable " + name + " set to", xval)
-
-def set_default(name, xval):
-    set_name = name.replace("DEFAULT_", "SET_")
-    if xval in globals()[set_name]:
-        globals()[name] = xval
-    else:
-        raise ValueError("error: " + xval + " not in " + set_name)
-    report_setting(name)
-    return 
+# For method of linear interpolation
+# From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
 
 def beta_norm_wc(n):
     """
@@ -227,8 +207,18 @@ c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.0133256
 Tc_poly_PLTS = np.polynomial.Polynomial(d_c)
 TAB_poly_PLTS = np.polynomial.Polynomial(c_AB)
 
+# Greywall scale to PLTS scale, 6 order polynomial coefficients;
+GtoPLTS6 = [-0.14265343150487, 1.2810635032153, -0.22689947807354, 0.084337673002034, -0.016928990685839, 0.0017611612884063, -7.4461876859237*(10**(-5))]
+GtoPLTS6_low_poly = np.polynomial.Polynomial(GtoPLTS6)
 
-# Numerical constants
+# Greywall scale to PLTS scale, 9 order polynomial coefficients;
+GtoPLTS9 = [0.020353327019475, 0.96670033496024, 0.0019559314169033, -9.5551084662924*(10**(-5)), 3.2167457655106*(10**(-6)), -7.0097586342143*(10**(-8)), 9.6909878738352*(10**(-10)),
+            -8.2126513949290*(10**(-12)), 3.8886762300964*(10**(-14)), -7.8713540127550*(10**(-17))]
+GtoPLTS9_high_poly = np.polynomial.Polynomial(GtoPLTS9)
+
+###############################################################################################################
+
+
 zeta3 = sp.zeta(3)
 beta_const = 7 * zeta3/(80 * np.pi**2)
 xiGL_const = np.sqrt(7 * zeta3 / 20)
@@ -247,7 +237,6 @@ e.append(np.array([0, 0, 1]))
 e.append(np.array([1, 1j, 0])/np.sqrt(2))
 e.append(np.array([1, -1j, 0])/np.sqrt(2))
 
-z3 = np.zeros((3,3))
 id3 = np.identity(3)
 D_A = np.outer(e[0], e[1])
 D_B = id3/np.sqrt(3)
@@ -255,22 +244,16 @@ D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 D_polar = np.outer(e[0], e[0])
 
 
-# Lowest barrier from A phase by exhaustive search
+# Lowest barrier by exhaustive search with p = 32 bar, T = 0.01K
 D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
  [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
  [ 0.07959769-0.05774015j,  0.24372012-0.19001106j,  0.04900674-0.0131628j ]])
 
 # Dictionary of phases
-# Antihermitian generators
-T_xy = np.array([[0,1,0],[-1,0,0],[0,0,0]])
-T_yz = np.array([[0,0,0],[0,0,1],[0,-1,0]])
-T_xz = np.array([[0,0,1],[0,0,0],[-1,0,0]])
-# pi/2 rotations
-O_xy = np.array([[0,1,0],[-1,0,0],[0,0,1]])
-O_yz = np.array([[1,0,0],[0,0,1],[0,-1,0]])
+
 O_xz = np.array([[0,0,1],[0,1,0],[-1,0,0]])
 
-inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "Ay", "Ayy", "Az", "beta", "gamma" ]
+inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "beta", "gamma" ]
 
 R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
               np.array([1, 1, 1/2, 1/2, 1/2]),
@@ -278,16 +261,10 @@ R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
               np.array([0, 1, 1/3, 1/3, 1/3]),
               np.array([0, 1, 1/2, 1/2, 1/2]),
               np.array([0, 1, 0,   1,   1]),
-              np.array([0, 1, 0,   1,   1]),
-              np.array([0, 1, 0,   1,   1]),
-              np.array([0, 1, 0,   1,   1]),
               np.array([0, 1, 1,   1,   0]),
               np.array([0, 1, 0,   1,   0])]
 
 R_dict = dict(zip(inert_phases, R_arr_list))
-
-
-# Need to have a normalised OP class separate from phases
 
 D_dict = { "B"       : id3/np.sqrt(3),
            "planar"  : (id3 - np.outer(e[0], e[0]))/np.sqrt(2),
@@ -295,25 +272,28 @@ D_dict = { "B"       : id3/np.sqrt(3),
            "alpha"   : np.diag(np.array([1, np.exp(1j*np.pi/3), np.exp(2j*np.pi/3)])/np.sqrt(3)),
            "bipolar" : np.diag(np.array([1, 1j, 0])/np.sqrt(2)),
            "A"       : np.matmul(O_xz, D_A),
-           "Ay"      : -1j*np.matmul(O_yz,np.matmul(D_A, O_xz)), #-1j*np.matmul(O_yz, D_A),
-           "Ayy"     : np.matmul(np.matmul(O_yz,D_A), O_yz), #-1j*np.matmul(O_yz, D_A),
-           "Az"      : D_A,
            "beta"    : np.matmul(np.outer(e[1], e[0]), O_xz), 
            "gamma"   : np.outer(e[1], e[1])
            }
 
 
+#################################################################################
+###                          Experimental functions                           ###
+#################################################################################
 
-
-# Experimental data functions
-def Tc_mK_expt(p):
-    # if scale == "PLTS":
-    if DEFAULT_T_SCALE == "PLTS":
-
+def Tc_mK_expt(p, scale=DEFAULT_T_SCALE):
+    if scale == "PLTS":
         return Tc_poly_PLTS(p)
     else:
         return Tc_poly_Greywall(p)
 
+def TAB_mK_expt(p, scale=DEFAULT_T_SCALE):
+    if scale == "PLTS":
+        return TAB_poly_PLTS(p)
+    else:
+        return TAB_poly_Greywall(p-p_pcp_bar)
+
+    
 def Tc_mK(p):
     """Deprecated: uses interpolation to return experimental value of Tc. 
     Gives values very close to Greywall 1986 polynomial.
@@ -328,25 +308,14 @@ def Tc_mK(p):
     return np.interp(p, p_nodes, Tc_data_mK)
 
 
-def T_mK(t, p):
+def T_mK(t, p, scale=DEFAULT_T_SCALE):
     """Converts reduced temperature to temperature in mK.
     """
-    return t * Tc_mK_expt(p)
+    return t * Tc_mK(p)
 
-def TAB_mK_expt(p):
-    if DEFAULT_T_SCALE == "PLTS":
-        TAB = TAB_poly_PLTS(p)
-    else:
-        TAB = TAB_poly_Greywall(p - p_pcp_bar)
-    if isinstance(p, np.ndarray):
-        TAB[p<p_pcp_bar] = np.nan
-    else:
-        if p < p_pcp_bar:
-            TAB = np.nan
-    return TAB
-
-def tAB_expt(p):
-    return TAB_mK_expt(p)/Tc_mK_expt(p)
+# temperature scale convertor, Greywall to PLTS, six order polynomial, in unit of mK
+# probably works for 0.9mK till 5.6mK
+def T_GtoPlts6_low_poly(TG):  return np.poly1d(np.flip(GtoPLTS6_low_poly.coef))(TG)
 
 # temperature scale convertor, Greywall to PLTS, nine order polynomial 
 def T_GtoPlts9_high_poly(TG):  return np.poly1d(np.flip(GtoPLTS9_high_poly.coef))(TG)
@@ -408,14 +377,12 @@ def delta_beta_norm(p, n, method="interp"):
     """
     if method == "interp":
         db = delta_beta_norm_interp(p, n)
+        return db
     # elif method == "polyfit":
     else:
         raise ValueError("error: strong coupling parameter method must be interp or polyfit")
+        return 1
 
-    
-    if DEFAULT_SC_ADJUST:
-            db *= np.exp(-sc_adjust_fun(p))
-    return db
 
 def delta_beta_norm_interp(p, n): 
     """Interpolation method. Choose data source
@@ -539,10 +506,7 @@ def delta_polar_norm(t, p):
 def t_AB(p):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) 
-                       + (delta_beta_norm(p, 3) 
-                       - 2*delta_beta_norm(p, 4) 
-                       - 2*delta_beta_norm(p, 5))/3) 
+    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) + (delta_beta_norm(p, 3) -2.*delta_beta_norm(p, 4) -2.*delta_beta_norm(p, 5))/3) 
     
     if isinstance(t_ab_val, np.ndarray):
         t_ab_val[t_ab_val > 1] = np.nan
@@ -555,11 +519,6 @@ def tAB(p):
     """Synonym for t_AB.
     """
     return t_AB(p)
-
-def TAB_mK(p):
-    """ AB transition temperature at pressure p, in mK
-    """
-    return tAB(p) * Tc_mK_expt(p)
 
 # Generate SC adjustment factor
 def logf_poly():
@@ -597,16 +556,6 @@ def mass_B_norm(t, p, JC):
     return np.sqrt(m2)        
 
 
-def critical_radius(t, p, sigma_fun=0.95):
-    """Radius of critical bubble, in nm.  
-    Ideally will optionally use function to get 
-    surface tension. Uses approximation."""
-    if isinstance(sigma_fun, float):
-        sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
-    # elif isinstance(sigma_fun, function):
-    #     sigma_AB = sigma_fun(t,p)
-    
-    return sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
 
 
 def tr(A):
@@ -710,7 +659,7 @@ def vec2mat(Av):
 
 def eig_vals(A):
     """
-    Extracts eigenvalues of array A
+    Multiplies A by its Hermitian conjugate on last two indices
 
     Parameters
     ----------
@@ -731,60 +680,6 @@ def eig_vals(A):
     for n, A_el in enumerate(A_flatter):
         e_vals[n,:] = sl.eigvals(A_el)
     return e_vals.reshape(A_shape[0:A_dim-2] + (3,))
-
-
-def eig_orbital(A):
-    """
-    Extracts eigenvalues of array A^dagger A, relevant for angular momentum vectors
-
-    Parameters
-    ----------
-    A : ndarray dtype complex, shape (m,n,...,3,3)
-        order parameter array.
-
-    Returns
-    -------
-    ndarray
-        shape (m,n,...,3).
-
-    """
-    H = np.matmul(hconj(A), A)
-    H_dim = H.ndim
-    H_shape = H.shape
-    H_size = H.size
-    H_flatter = H.reshape(H_size//9, 3, 3)
-    e_vals = np.zeros((H_size//9, 3), dtype=float)
-    for n, H_el in enumerate(H_flatter):
-        e_vals[n,:] = sl.eigvals(H_el)
-    e_vals.sort()
-    return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
-
-
-def eig_spin(A):
-    """
-    Extracts eigenvalues of array A A^dagger, relevant for spin vectors
-
-    Parameters
-    ----------
-    A : ndarray dtype complex, shape (m,n,...,3,3)
-        order parameter array.
-
-    Returns
-    -------
-    ndarray
-        shape (m,n,...,3).
-
-    """
-    H = np.matmul(A, hconj(A))
-    H_dim = H.ndim
-    H_shape = H.shape
-    H_size = H.size
-    H_flatter = H.reshape(H_size//9, 3, 3)
-    e_vals = np.zeros((H_size//9, 3), dtype=float)
-    for n, H_el in enumerate(H_flatter):
-        e_vals[n,:] = sl.eigvals(H_el)
-    e_vals.sort()
-    return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
 
 
 def args_parse(*args):
@@ -1084,8 +979,12 @@ def lengths(X, Y):
     return np.array([norm(X_Y), norm(X - X_Y)]).T
 
 
-for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
-    report_setting(x)
+# def report_setting(name):
+#     xval = globals()[name]
+#     print("he3_tools:", type(xval), "variable " + name + " imported with value", xval)
+    
+# for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
+#     report_setting(x)
 
 
     
