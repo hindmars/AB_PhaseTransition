@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 import pickle as pic
 import he3_tools as h
 
+import parpia_graph_settings as pgs
+
 h.set_default("DEFAULT_SC_ADJUST", True)
 h.set_default("DEFAULT_T_SCALE", "PLTS")
 
@@ -77,8 +79,8 @@ p_data_constp = data_constp[:,0]
 T_IC_data_constp = data_constp[:,1]
 T_HEC_data_constp = data_constp[:,2]
 
-ax.scatter(T_IC_data_constp, p_data_constp, marker='<', s=15, c='xkcd:lightblue', alpha=0.5, edgecolors='b', linewidth=1)
-ax.scatter(T_HEC_data_constp, p_data_constp, marker='<', s=20, c='xkcd:pink', alpha=0.5, edgecolors='k', linewidth=1)
+ax.scatter(T_IC_data_constp, p_data_constp, **pgs.marker_data_IC_constP)
+ax.scatter(T_HEC_data_constp, p_data_constp, **pgs.marker_data_HEC_constP)
 
 #%%
 
@@ -90,8 +92,8 @@ p_data_variedp = data_variedp[:,0]
 T_HEC_data_variedp = data_variedp[:,1]
 T_IC_data_variedp = data_variedp[:,2]
 
-ax.scatter(T_IC_data_variedp, p_data_variedp, marker='x', s=15, c='b', linewidth=1)
-ax.scatter(T_HEC_data_variedp, p_data_variedp, marker='s', s=15, c='xkcd:pink', alpha=0.5, edgecolors='k', linewidth=1)
+ax.scatter(T_IC_data_variedp, p_data_variedp, **pgs.marker_data_IC_varyP)
+ax.scatter(T_HEC_data_variedp, p_data_variedp, **pgs.marker_data_HEC_varyP)
 
 #%%
 
@@ -118,4 +120,4 @@ ax.legend(fontsize='smaller')
 ax.set_title(f'Total surface energy difference, $D = {w:}$ nm \n (wall,bulk) = AA or BB, {bc:}imal pair breaking')
 
 #%%
-fig.savefig(f'surface_energy_AA_BB_1100nm_{bc:}pb{id:}_cornell_data.pdf')
+# fig.savefig(f'surface_energy_AA_BB_1100nm_{bc:}pb{id:}_cornell_data.pdf')
