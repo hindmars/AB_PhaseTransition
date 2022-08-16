@@ -1,16 +1,12 @@
-# AB_PhaseTransition wiki page
+# AB_PhaseTransition
 
-Repsositry of modules and codes devoted on A-B transtion, bubble nucleation and some confinements physics 
+Repository of modules and codes developed for studying the AB phase transition in superfluid Helium-3, developed in collaboration with GitHub user timohyva. It started as a fork of https://github.com/timohyva/AB_PhaseTransition/.
 
-## WP2
 
-## Descriptions
-This repository provides modules and codes about many calculations based on strong coupling (SC) corrected Ginzburg-Landau model of Superfluid Helium-3. It is developed to implement different kinds of calculations involving SC-Ginzburg-Landau free energy and dydic tensor field/order parameter of symmetry-breking phases of Helium-3 in mK level temperature. 
+## Descriptions 
 
-The basic modules and tools of this repo consists of 
-<p align="center">
-    SCCO-V0*, SC-Beta-V0*, he3-tools, AB_wall
-</p>
+The main modules of the repository are
+
 
 ## Languages (current)
 * python3
