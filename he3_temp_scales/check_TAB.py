@@ -34,11 +34,12 @@ plt.plot(TAB_Wth, p, label=r"$T_{AB}$, Wiman thesis")
 
 h.DEFAULT_SC_CORRS = "RWS19"
 p_coarse = p[::5]
-# TAB_RWS_adj = h.t_AB(p_coarse, sc_adjust=True)*h.Tc_mK(p_coarse)
-h.DEFAULT_SC_ADJUST=True
-TAB_RWS_adj = h.t_AB(p_coarse)*h.Tc_mK(p_coarse)
-h.DEFAULT_SC_ADJUST=False
-plt.plot(TAB_RWS_adj, p_coarse, 'x', label=r"$T_{AB}$, RWS 2019, adjusted")
+
+# # TAB_RWS_adj = h.t_AB(p_coarse, sc_adjust=True)*h.Tc_mK(p_coarse)
+# h.DEFAULT_SC_ADJUST=True
+# TAB_RWS_adj = h.t_AB(p_coarse)*h.Tc_mK(p_coarse)
+# h.DEFAULT_SC_ADJUST=False
+# plt.plot(TAB_RWS_adj, p_coarse, 'x', label=r"$T_{AB}$, RWS 2019, adjusted")
 
 
 

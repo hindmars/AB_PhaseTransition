@@ -26,14 +26,16 @@ xiGL_const = np.sqrt(7 * zeta3 / 20)
 mhe3_u = 3.0160293 
 mhe3_kg = mhe3_u * cphy["atomic mass constant"][0]
 kB = c.k
+R = c.R
+N_A = c.N_A
 hbar = c.hbar
 
 
 SET_T_SCALE= {"Greywall", "PLTS"}
-DEFAULT_T_SCALE="Greywall" 
-# DEFAULT_T_SCALE="PLTS" 
+# DEFAULT_T_SCALE="Greywall" 
+DEFAULT_T_SCALE="PLTS" 
 
-SET_SC_CORRS= {"RWS19", "Wiman-thesis", "Choi", "WS15"}
+SET_SC_CORRS= {"RWS19", "Wiman-thesis", "Choi-interp", "WS15", "Choi-poly"}
 DEFAULT_SC_CORRS="RWS19"
 # DEFAULT_SC_CORRS="Wiman-thesis"
 # DEFAULT_SC_CORRS="Choi"
@@ -197,10 +199,26 @@ def get_poly_ws15():
     return [nppoly.Polynomial(a1sc), nppoly.Polynomial(a2sc), nppoly.Polynomial(a3sc), 
             nppoly.Polynomial(a4sc), nppoly.Polynomial(a5sc)]
 
+def get_poly_choi_this():
+    # Polynomial fits to Choi et al data, same orders as Wiman-Sauls 205
+    beta_Choi_data = get_interp_data_choi()
+
+    p_choi = beta_Choi_data[0]
+    beta_choi = beta_Choi_data[1]
+
+    my_poly_list = []
+    my_poly_order_list = [3, 8, 9, 7, 7]
+
+    for n, (beta, my_poly_order) in enumerate(zip(beta_choi, my_poly_order_list)):
+        my_poly_list.append(nppoly.Polynomial.fit(p_choi, beta_choi[n], my_poly_order))
+
+    return my_poly_list
+
 
 dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
                 "Wiman-thesis" : get_interp_data_wiman_thesis(),
-                "Choi" : get_interp_data_choi(),
+                "Choi-interp" : get_interp_data_choi(),
+                "Choi-poly" : get_poly_choi_this(),
                 "WS15" : get_poly_ws15()}
 
 ######################################################################################
@@ -211,7 +229,7 @@ dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
 p_nodes = range(0, 36, 2)
 
 Tc_data_mK = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 
-      2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.48]
+      2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.486]
 
 # particle_density, nm^{-3}
 np_data = [16.28, 17.41, 18.21, 18.85, 19.34, 19.75, 20.16, 20.60, 21.01, 21.44, 21.79, 
@@ -244,6 +262,7 @@ a_list = [a1[::-1]] # polyfit wants highest power first
 # From Greywall 1986
 T_pcp_mK = 2.273
 p_pcp_bar = 21.22
+p_A_bar = 34.338
 # Greywall 1986 TAB polynomial fit
 aTAB_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
 aTc_G = [0.92938375, 0.13867188, -0.69302185e-2, 0.25685169e-3, -0.57248644e-5, 0.5301091e-7]
@@ -366,6 +385,9 @@ def TAB_mK_expt(p):
 def tAB_expt(p):
     return TAB_mK_expt(p)/Tc_mK_expt(p)
 
+def p_melt(T_mK):
+    return p_A_bar * np.ones_like(T_mK)
+
 # temperature scale convertor, Greywall to PLTS, nine order polynomial 
 # def T_GtoPlts9_high_poly(TG):  return np.poly1d(np.flip(GtoPLTS9_high_poly.coef))(TG)
 
@@ -425,20 +447,29 @@ def delta_beta_norm(p, n):
     the modulus of the first weak coupling parameter.
 
     The default method is interpolation of strong coupling coefficients against presure (bar).
-    And the defualt data source is Regean, Wiman and Souls 2019 data sheet. 
+    The defualt data source is Regan, Wiman and Sauls 2019 table. 
 
-    The other data source is Choi et. al 2007 data sheet. However, this impiraical data doesn't have 
-    Temperature dependence 
+    The other data source is Choi et. al 2007 table. This can be either interpolated, 
+    or fitted to a polynomial (Choi-poly)
+    
     """
 
-    if DEFAULT_SC_CORRS == "WS15":
-        db = dbeta_data_dict["WS15"][n-1](p)
+    if DEFAULT_SC_CORRS == "WS15" or DEFAULT_SC_CORRS == "Choi-poly":
+        db = dbeta_data_dict[DEFAULT_SC_CORRS][n-1](p)
     else:
         db = delta_beta_norm_interp(p, n)
     
     if DEFAULT_SC_ADJUST:
             db *= np.exp(-sc_adjust_fun(p))
     return db
+
+def delta_beta_norm_asarray(p):
+    """
+    Strong coupling corrections to material parameters, in units of 
+    the modulus of the first weak coupling parameter, supplied as a (1,5) array.
+    """
+    delta_beta_norm_list = [ delta_beta_norm(p, n) for n in range(1,6)]
+    return np.array(delta_beta_norm_list)
 
 def delta_beta_norm_interp(p, n): 
     """Interpolation method. Choose data source

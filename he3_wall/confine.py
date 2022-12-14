@@ -28,14 +28,16 @@ def plot_confine(A, pot, gr):
     
     w_mu = gr.R * h.xi(0,p)/1000
     
-    ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm()) + 1)
+    ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm()) + 1, label="Total")
+    ax[0].plot(x, eden_pot/abs(pot.mat_pars.f_B_norm()) + 1, label="Bulk")
     
     ax[0].set_ylabel(r'$e/|f_B| + 1$')
     ax[0].grid()
+    ax[0].legend()
     ax[0].set_xlim(xmin, xmax)
     tstring1 = r'p={:.1f} bar, $T={:.2f}$ mK, $w={:.2f} \;\mu$m'.format(p, t*h.Tc_mK(p), w_mu)
-    tstring2 = r'$\sigma_{{bw}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.3f}$, '.format(sigma_bw)
-    tstring3 = r'$\sigma_{{tot}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.3f}$'.format(sigma_tot)
+    tstring2 = r'$\sigma_{{bw}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$, '.format(sigma_bw)
+    tstring3 = r'$\sigma_{{tot}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.1f}$'.format(sigma_tot)
     ax[0].set_title(tstring1 + '\n' + tstring2 + tstring3 )
     
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
@@ -57,13 +59,14 @@ def plot_confine(A, pot, gr):
 
 
 def get_confine(t, p, w, wall_phase="Ay", bulk_phase="B",
-                bcs = [hw.bc_min_pb, hw.bc_min_pb], T_list = None, 
+                bcs = [hw.bc_min_pb, hw.bc_min_pb], dim=1,
+                T_list = None, 
                 N=500, **kwargs):
     
     L = (w)/h.xi(0,p)
     
     A, pot, gr = hw.krylov_confine(t, p, wall_phase=wall_phase, bulk_phase=bulk_phase, 
-                                   bcs=bcs, T_list=T_list, gr_pars=(N,L), dim=1, **kwargs)
+                                   bcs=bcs, dim=1, T_list=T_list, gr_pars=(N,L), **kwargs)
 
     sigma_bw = hw.surface_energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
     sigma_tot = hw.energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
@@ -73,12 +76,12 @@ def get_confine(t, p, w, wall_phase="Ay", bulk_phase="B",
 
 
 def get_and_plot_confine(t, p, w, wall_phase="Ay", bulk_phase="B",
-                         bcs = [hw.bc_min_pb, hw.bc_min_pb], T_list = None, 
+                         bcs = [hw.bc_min_pb, hw.bc_min_pb], dim=1, T_list = None, 
                          N=500, **kwargs):
 
     Apg, sigma_bw, sigma_tot = get_confine(t, p, w, wall_phase, bulk_phase, 
-                                       bcs, T_list, 
-                                       N, **kwargs)
+                                       bcs, dim=dim, T_list=T_list, 
+                                       N=N, **kwargs)
     
     # Plotting
     ax = plot_confine(*Apg)

@@ -18,3 +18,11 @@ test*.py
 
 # ignore the folders
 #*/
+
+#ignore various python files
+__pycache__
+*.pyc
+
+# Mac housekeeping
+.DS_Store
+

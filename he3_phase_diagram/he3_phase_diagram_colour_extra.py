@@ -90,4 +90,4 @@ ax.annotate("B phase",(1.85,26), fontsize="larger")
 ax.annotate("A phase",(2.15,28), fontsize="larger")
 ax.annotate("Normal",(2.25,19), fontsize="larger")
 
-fig.savefig("he3_phase_diagram.pdf")
+fig.savefig("he3_phase_diagram_with_adjusted.pdf")

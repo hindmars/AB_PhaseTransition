@@ -765,6 +765,7 @@ def plot_wall(A, pot, gr,
     comp_key = ('x', 'y', 'z')
     t = pot.mat_pars.t
     p = pot.mat_pars.p
+    xiGL = h.xi(t,p)
     eden, eden_grad, eden_pot = energy_density(A, pot, gr)
     sigma = surface_energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
 
@@ -779,11 +780,13 @@ def plot_wall(A, pot, gr,
     if np.all(d_l == d_r) and np.all(n_l == n_r) and np.all(r_l == r_r):
         x = (gr.x - max(gr.x)/2)* h.xi(0,p)/h.xi(t,p)
         xmin = np.min(x)
-        xmax = np.max(x)*1.7
+        # xmax = np.max(x)*1.7
+        xmax = np.max(x)
     else:
         x = (gr.x)* h.xi(0,p)/h.xi(t,p)
         xmin = 0
-        xmax = np.max(x)*1.35
+        # xmax = np.max(x)*1.35
+        xmax = np.max(x)
                 
         
         
@@ -792,11 +795,13 @@ def plot_wall(A, pot, gr,
     ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm()) + 1, label="Total")
     ax[0].plot(x, eden_pot/abs(pot.mat_pars.f_B_norm()) + 1, label="Bulk")
     
-    ax[0].set_ylabel(r'$e/|f_B|$')
+    ax[0].set_ylabel(r'$e/|f_B|+1$')
     ax[0].grid()
     ax[0].set_xlim(xmin, xmax)
-    ax[0].legend(loc='center right', title=r'Excess over $f_B$')
-    ax[0].set_title(r'T={:.2f} mK, p={:.2f} bar: $\sigma/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$'.format(t*h.Tc_mK(p), p, sigma))
+    # ax[0].legend(loc='center right', title=r'Excess over $f_B$')
+    ax[0].legend(bbox_to_anchor=(1.025, 0.5, 0.25, 0.5), title=r'Excess over $f_B$')
+    title_string = r'T={:.2f} mK, p={:.1f} bar: $\xi_{{\rm GL}}(T) = {:.1f}$ nm, $\sigma/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$'
+    ax[0].set_title(title_string.format(t*h.Tc_mK(p), p, xiGL, sigma), fontsize=10)
     
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
     
@@ -816,10 +821,13 @@ def plot_wall(A, pot, gr,
     # ax[1].plot(x, norm*A[:, 1, 0].imag, label=r'${\rm Im}(A_{yx})$')
     
     ax[1].set_xlim(xmin, xmax)
-    ax[1].legend(loc='center right')
+    # ax[1].legend(loc='center right')
+    ax[1].legend(bbox_to_anchor=(1.025, 0.05, 0.25, 1.0))
     ax[1].grid()
     ax[1].set_ylabel(r'$A \sqrt{3}/\Delta_B(T,p)$')
     ax[1].set_xlabel(r'$x/\xi_{\rm GL}(T)$')
+
+    plt.tight_layout()
 
     return ax
 
