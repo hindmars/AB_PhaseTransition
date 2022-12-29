@@ -17,13 +17,16 @@ import he3_tools as h
 p = np.linspace(0, 34, 100)
 
 
+# h.DEFAULT_T_SCALE="Greywall"
+h.set_default('DEFAULT_T_SCALE', "Greywall")
 Tc_mK_G = h.Tc_mK_expt(p)
 TAB_mK_G = h.TAB_mK_expt(p)
 
-h.DEFAULT_T_SCALE="PLTS"
+# h.DEFAULT_T_SCALE="PLTS"
+h.set_default('DEFAULT_T_SCALE', "PLTS")
 Tc_mK_PLTS = h.Tc_mK_expt(p)
 TAB_mK_PLTS = h.TAB_mK_expt(p)
-h.DEFAULT_T_SCALE="Greywall"
+# h.DEFAULT_T_SCALE="Greywall"
 
 line_G = plt.plot(Tc_mK_G, p, label="$T_c$ Greywall")
 line_PLTS = plt.plot(Tc_mK_PLTS, p, label="$T_c$ PLTS")

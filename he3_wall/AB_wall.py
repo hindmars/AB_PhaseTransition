@@ -13,7 +13,7 @@ import he3_wall as hw
 
 # h.set_default("DEFAULT_SC_CORRS", "WS15")
 # p = 25.5
-p = 25
+p = 29
 t = h.t_AB(p)
 
 N, L_xi = (500, 25)

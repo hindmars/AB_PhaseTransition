@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import he3_tools as h
 
-savefig = True
+savefig = False
 
 cols = ['r', 'g', 'b', 'c', 'm']
 
