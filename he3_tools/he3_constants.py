@@ -17,18 +17,25 @@ cphy = c.physical_constants
 zeta3 = sp.zeta(3)
 beta_const = 7 * zeta3/(80 * c.pi**2)
 xiGL_const = np.sqrt(7 * zeta3 / 20)
+beta_norm_wc_list = [-1, 2, 2, 2, -2]
 
 # Physical constants
-# Helium 3 mass in u
-mhe3_u = 3.0160293 
-mhe3_kg = mhe3_u * cphy["atomic mass constant"][0]
 kB = c.k
 R = c.R
 N_A = c.N_A
 hbar = c.hbar
 
+# Helium 3 constants
+
+mhe3_u = 3.0160293 
+mu0he3_J_T = cphy["helion mag. mom."][0]
+
+# Zeeman (quadratic) energy constant, evaaluated at 1 T and 1 mK
+gH0 = 20 * beta_const * (mu0he3_J_T/kB)**2 * (1/1e-3)**2
+
+
+# BCS constants
 a_bcs = 3.235 # Exponent for fit to BCS gap
 delta_bcs0 = np.pi * np.exp(-np.euler_gamma)
 
-beta_norm_wc_list = [-1, 2, 2, 2, -2]
 
