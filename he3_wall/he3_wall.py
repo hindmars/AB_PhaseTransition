@@ -312,7 +312,7 @@ def phi_shift(phi, direction, gr):
     if np.any(dirichlet):
         # phi_shift[boundary, :, dirichlet] = phi[boundary, :, dirichlet] - phi[neighbour, :, dirichlet]
         # Assumes Dirichlet BC is phi = 0
-        phi_shifted[boundary, :, dirichlet] =  - phi[neighbour, :, dirichlet]
+        phi_shifted[boundary, :, dirichlet] = 2*phi[boundary, :, dirichlet] - phi[neighbour, :, dirichlet]
     if np.any(neumann):
         phi_shifted[boundary, :, neumann] = phi[neighbour, :, neumann]
     if np.any(robin):
@@ -335,8 +335,8 @@ def field_eqn_with_bcs(phi, pot, gr):
     phi_plus = phi_shift(phi, +1, gr)
     phi_minus = phi_shift(phi, -1, gr)
     
-    phi = boundary_condition(phi, gr, bcleft)
-    phi = boundary_condition(phi, gr, bcright)
+    # phi = boundary_condition(phi, gr, bcleft)
+    # phi = boundary_condition(phi, gr, bcright)
     # phi_plus = phi_shift(phi, +1, bcs)
     # phi_minus = phi_shift(phi, -1, bcs)
     # else:

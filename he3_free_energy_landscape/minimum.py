@@ -92,8 +92,8 @@ for ind in ind_arr:
 # plt.xlabel(r'$\tau$')
 plt.xlabel(r'$[\sqrt{{\rm tr} A A^\dagger} - \Delta_B]/(k_B T_c)$')
 plt.ylabel(r'$f / f_0 $ ($T/T_c = 0.8$, $p = 26$ bar)')
-plt.xlim(-0.5,0.5)
-plt.ylim(-2,-1)
+# plt.xlim(-0.5,0.5)
+# plt.ylim(-2,-1)
 plt.plot([h.delta_A_norm(t,p) - h.delta_B_norm(t,p)]*2, [-2,-1],'k--', label="A phase gap")
 plt.plot([-0.5, 0.5], [h.f_B_norm(t, p)]*2, 'k', label=r'$f_B/f_0$')
 

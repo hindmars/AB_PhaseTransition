@@ -233,6 +233,12 @@ GtoPLTS9 = [0.020353327019475, 0.96670033496024, 0.0019559314169033, -9.55510846
             -8.2126513949290e-12, 3.8886762300964e-14, -7.8713540127550e-17]
 GtoPLTS9_high_poly = nppoly.Polynomial(GtoPLTS9)
 
+# Invert the transformation
+def invert_poly(poly, n):
+    x = np.linspace(0,1,100)
+    return nppoly.Polynomial.fit(poly(x), x, n)
+    
+PLTStoG9_high_poly = invert_poly(GtoPLTS9_high_poly, 9)
 
 # PLTS scale coefficients for polynomial method for Tc and T_AB, from Parpia et al 2022
 d_c = np.array([0.90972399274531, 0.14037182852625, -0.0074017331747577, 2.8617547367067e-4,-6.5064429600510e-6, 6.0754459040296e-8])

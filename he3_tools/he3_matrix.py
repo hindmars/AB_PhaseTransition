@@ -207,10 +207,10 @@ def norm(D, n=1):
     # D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
     D_H = hconj(D)
     norm2 = tr(np.matmul(D, D_H)).real
-    if n == 1:
-        return norm2
-    else:
-        return norm2**(n/2)
+    # if n == 1:
+    #     return norm2**(n/2)
+    # else:
+    return norm2**(n/2)
 
 
 def inner(X, Y):
@@ -303,3 +303,28 @@ def lengths(X, Y):
     X_Y = X - np.multiply.outer(inner(X,Y)/inner(Y,Y), Y ) 
 
     return np.array([norm(X_Y), norm(X - X_Y)]).T
+
+def levi_civita3_matrix2vector(X):
+    X_dim = X.ndim
+    X_shape = X.shape
+    X_size = X.size
+    X_flatter = X.reshape(X_size//9, 3, 3)
+    eps_X = np.array([X_flatter[:,1,2] - X_flatter[:,2,1], 
+                      X_flatter[:,2,0] - X_flatter[:,0,2], 
+                      X_flatter[:,0,1] - X_flatter[:,1,0]])
+    return eps_X.reshape(X_shape[0:X_dim-2] + (3,)) 
+
+def levi_civita3_vector2matrix(v):
+    v_dim = v.ndim
+    v_shape = v.shape
+    v_size = v.size
+    v_flatter = v.reshape(v_size//3, 3)
+    eps_X = np.zeros((v_size//3, 3, 3))
+    eps_X[:,0,1] = v_flatter[:,2]
+    eps_X[:,1,2] = v_flatter[:,0]
+    eps_X[:,0,2] = -v_flatter[:,1]
+    eps_X[:,1,0] = -v_flatter[:,2]
+    eps_X[:,2,1] = -v_flatter[:,0]
+    eps_X[:,2,0] = +v_flatter[:,1]
+
+    return eps_X.reshape(v_shape[0:v_dim-1] + (3,3)) 

@@ -32,7 +32,8 @@ mu0he3_J_T = cphy["helion mag. mom."][0]
 
 # Zeeman (quadratic) energy constant, evaaluated at 1 T and 1 mK
 gH0 = 20 * beta_const * (mu0he3_J_T/kB)**2 * (1/1e-3)**2
-
+# PHA asymmetry parameter for linear magnetic energy constant (see Sauls and Sharma 2003)
+lambda_A1 = 60.1e-3 # mK/T
 
 # BCS constants
 a_bcs = 3.235 # Exponent for fit to BCS gap
