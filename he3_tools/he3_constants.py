@@ -28,6 +28,7 @@ hbar = c.hbar
 # Helium 3 constants
 
 mhe3_u = 3.0160293 
+mhe3_kg = 3.0160293 * cphy['atomic mass constant'][0]
 mu0he3_J_T = cphy["helion mag. mom."][0]
 
 # Zeeman (quadratic) energy constant, evaaluated at 1 T and 1 mK

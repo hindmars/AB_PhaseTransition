@@ -18,7 +18,7 @@ from .he3_matrix import *
 from .he3_bases import *
 from .he3_free_energy import *
 
-for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
+for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE", "DEFAULT_ALPHA_TYPE"]:
     report_setting(x)
 
 

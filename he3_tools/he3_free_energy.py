@@ -357,3 +357,4 @@ def line_section(X, D, t, p, path='linear', scale=None, norm_preserve=False, n=5
     U_XD = U(A_XD, t, p)
     
     return v, A_XD, U_XD
+

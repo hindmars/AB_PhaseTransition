@@ -204,7 +204,9 @@ class grid_1d:
 class thin_wall_bubble:
     
     def __init__(self, pot, dim=3):
-        self.surface_energy = np.sqrt(h.beta_const) * pot.mat_pars.delta_wc()**3/6
+        # self.surface_energy = np.sqrt(h.beta_const) * pot.mat_pars.delta_wc()**3/6
+        p = pot.mat_pars.p
+        self.surface_energy = - 0.95*pot.mat_pars.f_B_norm()*pot.mat_pars.xi()/h.xi(0,p)
         self.energy_diff = pot.mat_pars.f_A_norm() - pot.mat_pars.f_B_norm()
         if self.energy_diff > 0:
             if dim == 4:
@@ -359,7 +361,7 @@ def field_eqn_with_bcs(phi, pot, gr):
 
 
 
-def initial_condition(pot, gr, D=None):
+def initial_condition(pot, gr, D=None, xscale=1.0):
     """
     Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub
     """
@@ -370,10 +372,11 @@ def initial_condition(pot, gr, D=None):
     m2 = 1/pot.mat_pars.xi()
     k = np.sqrt(m2/4)
 
-    rb = bub.r_bub
+    rb = xscale*bub.r_bub
     if rb == np.inf:
         rb = gr.R/2
 
+    print("Initialising thin-wall bubble with radius {:.1f}".format(rb))
     phi_init = 0.25*(1 - np.tanh(k*(gr.x - rb)))*(1 + np.tanh(k*(gr.x + rb )))  
 
 
@@ -388,6 +391,33 @@ def initial_condition(pot, gr, D=None):
         A_init = h.D_dict["A"] * pot.mat_pars.delta_A_norm() \
             - np.multiply.outer(phi_init , D ) 
         
+        
+    return A_init
+
+def initial_condition_BB(pot, gr, left_phase="B", right_phase="B1"):
+    """
+    Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub
+    """
+    
+    bub = thin_wall_bubble(pot, dim=gr.dim)
+    
+
+    m2 = 1/pot.mat_pars.xi()
+    k = np.sqrt(m2/4)
+
+    rb = bub.r_bub
+    if rb == np.inf:
+        rb = gr.R/2
+
+    print("Initialising thin-wall BB bubble with radius {:.1f}".format(rb))
+    phi_init = 0.25*(1 - np.tanh(k*(gr.x - rb)))*(1 + np.tanh(k*(gr.x + rb )))  
+
+
+    D = pot.mat_pars.delta_B_norm()*h.D_dict[right_phase] - pot.mat_pars.delta_B_norm()*h.D_dict[left_phase]
+    # D = D/h.norm(D)
+
+    A_init = h.D_dict[left_phase] * pot.mat_pars.delta_B_norm() \
+        + np.multiply.outer(phi_init , D )         
         
     return A_init
 
@@ -473,6 +503,7 @@ def initial_condition_confine(pot, gr, wall_phase="Ay", bulk_phase="B",
     return A_init
 
 def krylov_bubble(*args, gr_pars=(200,20), dim=3, 
+                  xscale=1.0,
                   display=False, 
                   verbose=True, maxiter=200, **kwargs):
     """
@@ -486,7 +517,7 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3,
     
     gr = grid_1d(*gr_pars, dim=dim, bcs=[bc_neu, bc_neu])
     
-    phi_init = initial_condition(pot, gr)
+    phi_init = initial_condition(pot, gr, xscale=xscale)
 
     
     def field_eqn_fix(phi):
@@ -531,6 +562,31 @@ def krylov_confine(*args, gr_pars=(200,20), dim=1,
 
     return phi, pot, gr 
 
+def krylov_BB(*args, gr_pars=(200,20), dim=1, 
+                   left_phase="B", right_phase="B1", 
+                   bcs = [bc_neu, bc_neu], **kwargs):
+    """
+    Apply Krylov solver to find solution in confined boundary conditions.
+    
+    Returns: order parameter phi, the potential object, and the grid object.
+    """
+    
+    pot = quartic_potential(*args)
+    gr = grid_1d(*gr_pars, dim=dim, bcs=bcs)
+    
+    phi_init = initial_condition_BB(pot, gr, 
+                                         left_phase=left_phase, right_phase=right_phase)
+    
+    def field_eqn_fix(phi):
+        return field_eqn_with_bcs(phi, pot, gr)
+
+    try:
+        phi = newton_krylov(field_eqn_fix, phi_init, **kwargs)
+    except scipy.optimize.nonlin.NoConvergence as e:
+        phi = e.args[0]
+        print('No Convergence')
+
+    return phi, pot, gr 
 
 def relax(t_eval, *args, gr_pars=(200,20), dim=1):
 
@@ -625,9 +681,9 @@ def surface_energy(A, pot, gr):
 def energy(phi, pot, gr):
 
     if gr.dim == 3:
-        vol_factor = 4*np.pi/3
+        vol_factor = 4*np.pi
     elif gr.dim == 4:
-        vol_factor = 2*np.pi**2
+        vol_factor = 8*np.pi**2
     elif gr.dim == 1:
         vol_factor=1    
     elif gr.dim == 2:
@@ -639,6 +695,7 @@ def energy(phi, pot, gr):
     
     e_grad = vol_factor * np.trapz(eden_grad, gr.x**(gr.dim) )
     e_pot = vol_factor * np.trapz(eden_pot, gr.x**(gr.dim))
+    
     
     return np.array([e_grad + e_pot, e_grad, e_pot])
 
@@ -760,8 +817,9 @@ def get_wall(t, p, w, N=500, **kwargs):
 
 def plot_wall(A, pot, gr, 
               real_comp_list=[(0,0), (1,1), (2,2)], 
-              imag_comp_list = [(0,1), (1,0)],
-              legend_loc='center right'):
+              imag_comp_list = [(0,1), (1,0)], 
+              plot_gap=False, 
+              legend_loc='center right', title_extra=''):
     comp_key = ('x', 'y', 'z')
     t = pot.mat_pars.t
     p = pot.mat_pars.p
@@ -800,7 +858,9 @@ def plot_wall(A, pot, gr,
     ax[0].set_xlim(xmin, xmax)
     # ax[0].legend(loc='center right', title=r'Excess over $f_B$')
     ax[0].legend(bbox_to_anchor=(1.025, 0.5, 0.25, 0.5), title=r'Excess over $f_B$')
-    title_string = r'T={:.2f} mK, p={:.1f} bar: $\xi_{{\rm GL}}(T) = {:.1f}$ nm, $\sigma/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$'
+    title_string = r'T={:.2f} mK, p={:.1f} bar' + '\n' \
+        + r' $\xi_{{\rm GL}}(T) = {:.1f}$ nm, $\sigma/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$'\
+        + title_extra
     ax[0].set_title(title_string.format(t*h.Tc_mK(p), p, xiGL, sigma), fontsize=10)
     
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
@@ -819,6 +879,9 @@ def plot_wall(A, pot, gr,
     # ax[1].plot(x, norm*A[:, 2, 2].real, label=r'${\rm Re}(A_{zz})$')
     # ax[1].plot(x, norm*A[:, 0, 1].imag, label=r'${\rm Im}(A_{xy})$')
     # ax[1].plot(x, norm*A[:, 1, 0].imag, label=r'${\rm Im}(A_{yx})$')
+    
+    if plot_gap:
+        ax[1].plot(x, norm*h.norm(A), 'k--', label=r'$||A||$')
     
     ax[1].set_xlim(xmin, xmax)
     # ax[1].legend(loc='center right')

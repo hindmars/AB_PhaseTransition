@@ -42,10 +42,14 @@ SET_ALPHA_TYPE = {"GL", "BCS"}
 DEFAULT_ALPHA_TYPE = "GL"
 
 def report_setting(name):
+    """Reports value of a globally defined variable.
+    """
     xval = globals()[name]
     print("he3_tools:", type(xval), "variable " + name + " set to", xval)
 
 def set_default(name, xval):
+    """Sets value of a globally defined variable.
+    """
     set_name = name.replace("DEFAULT_", "SET_")
     if xval in globals()[set_name]:
         globals()[name] = xval
@@ -101,7 +105,7 @@ def Tc_mK(p):
 
 
 def T_mK(t, p):
-    """Converts reduced temperature to temperature in mK.
+    """Converts reduced temperature ($T/T_c$) to temperature in mK.
     """
     return t * Tc_mK_expt(p)
 
@@ -133,49 +137,104 @@ def tAB_expt(p):
 
 def p_melt(T_mK):
     """
-    Melting pressure , Greywall 1986 (equation A1).
-    Needs PLTS to Greywall temperature converter
+    Melting pressure , Greywall 1986 (equation A1). T in mK, p in bar.
+    Uses Tian, Smith, Parpia 2022 PLTS to Greywall temperature converter.
     """
-    T = T_mK.copy()
+    if isinstance(T_mK, float) or isinstance(T_mK, int):
+        T = T_mK
+    else:
+        T = T_mK.copy()
     if DEFAULT_T_SCALE == "PLTS":
         T = T_PLTStoG(T_mK)
     # return h3d.p_A_bar * np.ones_like(T_mK)
-    return h3d.Pmelt_poly_Greywall(T) + h3d.p_A_bar
+    # Greywall data down to 0.9mK onlyq
+    T = np.maximum(T, 0.9)
+    return h3d.Pmelt_poly_Greywall(T)/T**3 + h3d.p_A_bar
 
-# def T_melt_PLTS(p):
-#     """This makes no sense - melting pressure is close to 34 bar. What is range of p?"""
-#     return h3d.Tmelt_poly_PLTS(p)
+def T_melt_PLTS(p):
+    """Returns melting temperataure (PLTS) as a function of pressure. 
+    Uses Tian, Smith, Parpia NIMS 2022 interpolation polunomials.
+    """
+    if isinstance(p, float) or isinstance(p, int):
+        pa = np.array([p])
+    else:
+        pa = p
+        
+    dp_mbar = (pa - h3d.p_A_bar)*1e3 
 
-# Temperature scale convertor, Greywall to PLTS, ninth order polynomial 
+    T_melt_mK = np.ones_like(pa)*np.nan
+    T_melt_mK[pa > 29.3] = h3d.Tmelt_poly_PLTS_hi(dp_mbar[pa > 29.3])
+    T_melt_mK[pa > 35.2] = h3d.Tmelt_poly_PLTS_lo(dp_mbar[pa > 35.2])
+    
+    if isinstance(p, float) or isinstance(p, int):
+        T_melt_mK = T_melt_mK[0]
+    
+    return T_melt_mK
+
 def T_GtoPLTS(TG):  
-    return h3d.GtoPLTS9_high_poly(TG)
+    """Temperature scale convertor, Greywall to PLTS, ninth order polynomial.
+    Between 0.9 mK and 100 mK, uses Tian, Smith, Parpia NIMS 2022 interpolation 
+    polynomials. For T > 100 mK, assumes linear realtio consistent with TSP value 
+    at 100 mK.    
+    """
+    if isinstance(TG, float) or isinstance(TG, int):
+        TGa = np.array([TG])
+    else:
+        TGa = TG
+        
 
-# Temperature scale convertor, invert Greywall to PLTS, ninth order polynomial 
-def T_PLTStoG(TPLTS):  
+    T_PLTS_mK = np.ones_like(TGa)*np.nan
+    T_PLTS_mK[TGa <= 5.6] = h3d.GtoPLTS_low_poly(TGa[TGa <= 5.6])
+    T_PLTS_mK[TGa > 5.6] = h3d.GtoPLTS_high_poly(TGa[TGa > 5.6])
+    T_PLTS_mK[TGa > 100] = TGa[TGa > 100] - 100.0 + h3d.GtoPLTS_high_poly(100)
+    
+    if isinstance(TG, float) or isinstance(TG, int):
+        T_PLTS_mK = T_PLTS_mK[0]
+
+    return T_PLTS_mK
+
+def T_PLTStoG(TPLTS):
+    """Temperature scale converter, invert Greywall to PLTS, ninth order polynomial 
+    Works between 0.9 mK and 100 mK.
+    Uses Tian, Smith, Parpia NIMS 2022 interpolation polunomials.        
+    """
     return h3d.PLTStoG9_high_poly(TPLTS)
 
 def npart(p):
-    """Particle density at pressure p.
+    """Particle density at pressure p bar ($nm^{-3}$).
     """
     # return np.interp(p, p_nodes, np_data)
     return np.interp(p, h3d.p_nodes, h3d.np_data)
 
 def mstar_m(p):
-    """Effective mass ratio at pressure p.
+    """Effective mass ratio at pressure p bar.
     """
-    # return np.interp(p, p_nodes, mstar_m_data)
     return np.interp(p, h3d.p_nodes, h3d.mstar_m_data)
 
 def vf(p):
-    """Fermi velocity at pressure p.
+    """Fermi velocity at pressure p bar (m/s).
     """
-    # return np.interp(p, p_nodes, vf_data)
     return np.interp(p, h3d.p_nodes, h3d.vf_data)
 
-def xi0(p):
-    """Zero T Cooper pair correlation length at pressure p (nm).
+def pf(p):
+    """Fermi momentum at pressure p bar (SI units, kg m/s)
     """
-    # return np.interp(p, p_nodes, xi0_data)
+    return h3c.mhe3_kg * mstar_m(p) * vf(p)
+
+def muf(p, units='SI'):
+    """Chemical potential at pressure p bar (Fermi energy at zero temperature).
+    units = 'SI' (default) SI units (J)
+    units = 'eV' (electron-volts)
+    
+    """
+    ef = 0.5*h3c.mhe3_kg * mstar_m(p) * vf(p)**2
+    if units == 'eV':
+        ef /= h3c.c.e
+    return ef
+
+def xi0(p):
+    """Zero T Cooper pair correlation length at pressure p bar (nm).
+    """
     return np.interp(p, h3d.p_nodes, h3d.xi0_data)
 
 def F0a(p):
@@ -183,18 +242,17 @@ def F0a(p):
     return h3d.F0a_poly(p)
 
 def xi(t, p):
-    """Ginzburg Landau correlation length at pressure p.
+    """Ginzburg Landau correlation length at pressure p bar (nm).
     """
     return h3c.xiGL_const*xi0(p)/(-alpha_norm(t))**0.5
 
 def xi_delta(t, p):
-    """BCS correlation length at pressure p.
+    """BCS correlation length at pressure p bar (nm).
     """
     return h3c.xiGL_const*xi0(p)/(-alpha_bcs(t))**0.5
     
-
 def N0(p):
-    """Density of states at Fermi surface, units nm^{-3} J^{-1}.
+    """Density of states at Fermi surface, units nm$^{-3}$ J$^{-1}$.
     """
     return npart(p) * 1.5 / (h3c.mhe3_kg * mstar_m(p) * vf(p)**2)
 
@@ -260,7 +318,7 @@ def H_scale(t, p):
 # Theory functions
 def f_scale(p):
 
-    """Free energy density units Joule per nm3 .
+    """ Natural free energy density scale, units Joule per nm3 .
     """
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
     return (1/3) * N0(p) * (h3c.kB * T_mK(1, p) * 1e-3)**2
@@ -445,7 +503,7 @@ def delta_polar_norm(t, p):
     """
     return  np.sqrt(- alpha_norm(t)/(2 * beta_polar_norm(t, p)))
 
-def t_AB(p):
+def t_AB(p, low_pressure_nan=True):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
     t_ab_val = (1/3)/ (delta_beta_norm(p, 1) 
@@ -453,17 +511,18 @@ def t_AB(p):
                        - 2*delta_beta_norm(p, 4) 
                        - 2*delta_beta_norm(p, 5))/3) 
     
-    if isinstance(t_ab_val, np.ndarray):
-        t_ab_val[t_ab_val > 1] = np.nan
-    elif t_ab_val > 1:
-        t_ab_val = np.nan
+    if low_pressure_nan:
+        if isinstance(t_ab_val, np.ndarray):
+            t_ab_val[t_ab_val > 1] = np.nan
+        elif t_ab_val > 1:
+            t_ab_val = np.nan
             
     return  t_ab_val
 
-def tAB(p):
+def tAB(p, low_pressure_nan=True):
     """Synonym for t_AB.
     """
-    return t_AB(p)
+    return t_AB(p, low_pressure_nan)
 
 def TAB_mK(p):
     """ AB transition temperature at pressure p, in mK

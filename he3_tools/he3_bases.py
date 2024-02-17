@@ -28,6 +28,7 @@ D_B = id3/np.sqrt(3)
 D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
 D_polar = np.outer(e[0], e[0])
 
+
 # Lowest barrier from A phase by exhaustive search
 D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
  [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
@@ -72,7 +73,14 @@ D_dict = { "B"       : id3/np.sqrt(3),
            "Ayy"     : np.matmul(np.matmul(O_yz,D_A), O_yz), #-1j*np.matmul(O_yz, D_A),
            "Az"      : D_A,
            "beta"    : np.matmul(np.outer(e[1], e[0]), O_xz), 
-           "gamma"   : np.outer(e[1], e[1])
+           "gamma"   : np.outer(e[1], e[1]), 
+           "B1"      : np.diag([-1, 1, 1])/np.sqrt(3), 
+           "B2"      : np.diag([1, -1, 1])/np.sqrt(3), 
+           "B3"      : np.diag([1, 1, -1])/np.sqrt(3), 
+           "B4"      : np.diag([-1, -1, 1])/np.sqrt(3), 
+           "B5"      : np.diag([-1, 1, -1])/np.sqrt(3), 
+           "B6"      : np.diag([1, -1, -1])/np.sqrt(3), 
+           "B7"      : np.diag([-1, -1, -1])/np.sqrt(3)
            }
 
 

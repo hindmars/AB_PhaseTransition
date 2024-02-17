@@ -217,38 +217,67 @@ Tc_poly_Greywall = nppoly.Polynomial(aTc_G)
 aTAB_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
 TAB_poly_Greywall = nppoly.Polynomial(aTAB_G)
 
-# Melting curve poly coeffs (Greywall) 0.9 - 5.6 mK
-aPmelt = [-0.19632970e-1, 0.61880268e-1, -0.781103055e-1, 0.13050600, -0.43519381e-1, 
-          0.13752791e-6, -0.17180436e-6, -0.220939060e-9, -0.85450245e-12] 
+# Melting curve poly coeffs (Greywall) 0.9 - 5.6 mK. 
+aPmelt = [-0.19632970e-1, 0.61880268e-1, -0.78803055e-1, 0.13050600, -0.43519381e-1, 
+          0.13752791e-3, -0.17180436e-6, -0.220939060e-9, 0.85450245e-12] 
 Pmelt_poly_Greywall = nppoly.Polynomial(aPmelt)
 
 # Greywall scale to PLTS scale, 6 order polynomial coefficients (Parpia et al 2022)
+# Temperature 0.9 mK to 5.6 mK
 GtoPLTS6 = [-0.14265343150487, 1.2810635032153, -0.22689947807354, 0.084337673002034, 
             -0.016928990685839, 0.0017611612884063, -7.4461876859237e-5]
-GtoPLTS6_low_poly = nppoly.Polynomial(GtoPLTS6)
+GtoPLTS_low_poly = nppoly.Polynomial(GtoPLTS6)
 
 # Greywall scale to PLTS scale, 9 order polynomial coefficients (Parpia et al 2022)
+# Temperature 5.6 mK to 100 mK
 GtoPLTS9 = [0.020353327019475, 0.96670033496024, 0.0019559314169033, -9.5551084662924e-5, 
             3.2167457655106e-6, -7.0097586342143e-8, 9.6909878738352e-10,
             -8.2126513949290e-12, 3.8886762300964e-14, -7.8713540127550e-17]
-GtoPLTS9_high_poly = nppoly.Polynomial(GtoPLTS9)
+GtoPLTS_high_poly = nppoly.Polynomial(GtoPLTS9)
 
 # Invert the transformation
-def invert_poly(poly, n):
-    x = np.linspace(0,1,100)
+def invert_poly(poly, n, x_range):
+    x = np.linspace(x_range[0], x_range[-1], 100)
     return nppoly.Polynomial.fit(poly(x), x, n)
     
-PLTStoG9_high_poly = invert_poly(GtoPLTS9_high_poly, 9)
+PLTStoG9_low_poly = invert_poly(GtoPLTS_low_poly, 9, [0.9, 5.6])
+PLTStoG9_high_poly = invert_poly(GtoPLTS_high_poly, 9, [5.6, 100])
 
-# PLTS scale coefficients for polynomial method for Tc and T_AB, from Parpia et al 2022
+# PLTS scale coefficients for polynomial method for Tc and T_AB, from Tian, Smith, Parpia et al 2022
 d_c = np.array([0.90972399274531, 0.14037182852625, -0.0074017331747577, 2.8617547367067e-4,-6.5064429600510e-6, 6.0754459040296e-8])
 c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.013325635880953, -2.3510107585468e-4, 1.6519539175010e-6])
 
 Tc_poly_PLTS = nppoly.Polynomial(d_c)
 TAB_poly_PLTS = nppoly.Polynomial(c_AB)
 
-# Melting curve coefficients, PLTS, 0.9 - 5.6 mK, p in millibar
-b_melt = np.array([2.4492188707375, -0.026522783946809, -2.7665556176967e-5, -2.2800036357249e-7, 
-       3.9890194953355e-10, 1.2845930171276e-11, -6.9521369379387e-13, -1.5658128429388e-14, 
-       -1.1687750824147e-16, -3.0199721850282e-19] )
-Tmelt_poly_PLTS = nppoly.Polynomial(b_melt/1e3) # convert to bar
+# PLTS temperature along melting curve, 5.6 - 100 mK, p - pA in millibar
+b_melt_hi = np.array([
+    2.5257068036689, 
+    -0.024555787070591, 
+    -1.7994349872600e-6, 
+    -6.0072773787192e-9, 
+    -5.8885557756054e-12, 
+    -3.9102041149206e-15, 
+    -1.6605359484626e-18, 
+    -4.3792852104458e-22, 
+    -6.5042399327047e-26, 
+    -4.1677548758514e-30] )
+
+Tmelt_poly_PLTS_hi = nppoly.Polynomial(b_melt_hi) 
+
+# PLTS temperature along melting curve, 0.9 - 5.6 mK, p - pA in millibar
+b_melt_lo = np.array([
+    2.4442188707375, 
+    -0.026522783446809, 
+    -2.7665556176467e-5, 
+    -2.2800036357244e-7, 
+     3.9890194953355e-10, 
+     1.2845430171276e-11, 
+    -6.9521369379387e-13, 
+    -1.5658128424388e-14, 
+    -1.1687750824147e-16, 
+    -3.0194721850282e-19] )
+
+Tmelt_poly_PLTS_lo = nppoly.Polynomial(b_melt_lo) # convert to bar
+
+

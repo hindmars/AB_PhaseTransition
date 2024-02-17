@@ -19,11 +19,11 @@ p_array = np.linspace(22,34,13)
 surface_energy_us = []
 surface_energy_thune = []
 
-N, L_xi = (500, 10)
+N, L_xi = (1000, 20)
 
 for p in p_array:
     t = h.tAB(p)
-    A, pot, gr = hw.krylov_bubble(t,p, gr_pars=(N,L_xi*h.xi(t,p)), dim=1)
+    A, pot, gr = hw.krylov_bubble(t,p, gr_pars=(N, L_xi*h.xi(t,p)), dim=1)
     # A, pot, gr = hw.krylov_bubble(h.alpha_norm(t), h.beta_norm_asarray(t,p), gr_pars=(500,125), dim=1)
     
     eden, eden_grad, eden_pot = hw.energy_density(A, pot, gr)
@@ -49,3 +49,9 @@ plt.xlim(22,34)
 plt.ylim(0.9,1.0)
 plt.title("AB interface surface surface energy")
 plt.legend()
+plt.tight_layout()
+
+savefig=True
+
+if savefig:
+    plt.savefig('ABsurface_energy.pdf')

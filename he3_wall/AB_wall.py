@@ -11,10 +11,11 @@ He3 phase boundary solutions
 import he3_tools as h
 import he3_wall as hw
 
-# h.set_default("DEFAULT_SC_CORRS", "WS15")
+h.set_default("DEFAULT_T_SCALE", "Greywall")
 # p = 25.5
-p = 29
-t = h.t_AB(p)
+p = 25
+# t = 1.5/h.Tc_mK(p)
+t = h.tAB(p)
 
 N, L_xi = (500, 25)
 
@@ -26,7 +27,7 @@ def get_and_plot_wall(t,p, w):
     # A, pot, gr = hw.krylov_bubble(h.alpha_norm(t), h.beta_norm_asarray(t,p), gr_pars=(500,125), dim=1)
     
     # Plotting
-    ax = hw.plot_wall(A, pot, gr)
+    ax = hw.plot_wall(A, pot, gr, plot_gap=True)
 
     return (A,pot,gr), ax
 

@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as scint
 import scipy.optimize as scopt
+import scipy.special as scspe
 
 r""" The BCS equation for the gap $\Delta$ is (Vollhardt and Woelfle 3.46e)
 $$
@@ -58,12 +59,18 @@ $$
 $$
 Not noticeably better is 
 $$
-\Delta_T^\text{fit1} = \Delta_0 \left(1 - t^a\right)^b, \qquad a = 3.485,\quad b = 0.541.
+\Delta_T^\text{fit2} = \Delta_0 \left(1 - t^a\right)^b, \qquad a = 3.485,\quad b = 0.541.
+$$
+Polynomials also work
+$$
+\Delta_T^\text{fit3} = \Delta_0 \left(a_0 + a_1 t + a_2 t^2 a_3 t^3)^{1/2}, 
+\qquad a = (-2.06\times 10{-3},  3.14 -3.11,  0.961).
 $$
 """
 
 xmax = 1e2 # Cut-off on integrations
 xmin = 1e-2
+const = np.sqrt(8*np.pi**2/(7*scspe.zeta(3)))
 
 def integrand(x, D, t=1):
     e = np.sqrt(x**2 + D**2)
@@ -78,6 +85,9 @@ def gap_eqn(D, t):
     res, _ = scint.quad(fun, xmin, xmax)
     return res
 
+def gap_GL(t): 
+    return const * np.sqrt(1-t)
+
 t_arr = np.linspace(0.002, 1, 500, endpoint=False)
 
 D_arr = np.array([float(scopt.fsolve(gap_eqn, 0.1, args=(t,))) for t in t_arr])
@@ -86,15 +96,51 @@ D_arr = np.array([float(scopt.fsolve(gap_eqn, 0.1, args=(t,))) for t in t_arr])
 # Fit the gap
 
 def gap_fit1(t,a):
+    """
+    
+    Best fit a [3.23485079]
+    
+    """
     return (1 - t**a)**0.5
 
 def gap_fit2(t,a,b):
+    """
+    
+    Best fit [a,b] [3.48540465, 0.541188  ]
+    
+    """
     return (1 - t**a)**b
 
+def gap_fit3(t, *pars):
+    """
+
+    Best fit pars: [-2.06196056e-03,  3.13789240e+00, -3.11236328e+00,  9.61261152e-01]    
+
+    """
+    x = 1-t
+    s = 0
+    for n, p in enumerate(pars):
+        s += p*x**n
+    return s**0.5
+
+def make_lab3(*pars):
+    lab3 = ''
+    for n, p in enumerate(pars):
+        if n== 0:
+            lab3 += r'$[{:.3g} '.format(pars[n])
+        else:
+            lab3 += '+ ({:.3g})x^{:d} '.format(pars[n], n)
+        
+    lab3 += ']^{1/2}$'
+    return lab3
+        
+
+#%%
 popt1, pcov1 = scopt.curve_fit(gap_fit1, t_arr, D_arr/D_arr[0], p0=(4,))
 popt2, pcov2 = scopt.curve_fit(gap_fit2, t_arr, D_arr/D_arr[0], p0=(4,0.5))
+popt3, pcov3 = scopt.curve_fit(gap_fit3, t_arr, D_arr/D_arr[0], p0=(0,1,1,1))
 
-print(popt1, popt2)
+print(popt1, popt2, popt3)
 
 #%%
 # From Muehlschleger 1959
@@ -115,17 +161,20 @@ muehl_t = muehl_data[0::2]
 muehl_delta = muehl_data[1::2]
 #%%
 
+plt.plot(t_arr, gap_GL(t_arr), 'k--', label='GL gap')
 plt.plot(t_arr, D_arr, label='BCS gap')
 plt.plot(t_arr, D_arr[0]*gap_fit1(t_arr, *popt1), 
          label=r'$\Delta_0(1 - t^{{ {:.3f} }})^{{ 0.5 }}$'.format(*popt1))
 plt.plot(t_arr, D_arr[0]*gap_fit2(t_arr, *popt2), 
           label=r'$\Delta_0(1 - t^{{ {:.3f} }})^{{ {:.3f} }}$'.format(*popt2))
+plt.plot(t_arr, D_arr[0]*gap_fit3(t_arr, *popt3), 
+          label=make_lab3(*popt3))
 plt.plot(muehl_t, D_arr[0]*muehl_delta,'k.', label=r'Muehlschlegel 1959')
 
 plt.xlabel(r'$T/T_c$')
 plt.ylabel(r'$\Delta_T/T_c$')
 plt.xlim(0,1)
-plt.ylim(0,2)
+plt.ylim(0,3)
 plt.legend()
 plt.grid(True)
 
