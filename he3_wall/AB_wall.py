@@ -13,7 +13,7 @@ import he3_wall as hw
 
 h.set_default("DEFAULT_T_SCALE", "Greywall")
 # p = 25.5
-p = 25
+p = 22
 # t = 1.5/h.Tc_mK(p)
 t = h.tAB(p)
 
@@ -34,6 +34,10 @@ def get_and_plot_wall(t,p, w):
 
 Apg_kry, ax = get_and_plot_wall(t, p, L_xi * h.xi(t,p))
 
+#%%
+axwall_eigs = hw.plot_eigs(*Apg_kry)
+
+#%%
 # sigma_AB = hw.energy(*Apg_kry)[0]*h.xi(0,p)/(abs(Apg_kry[1].mat_pars.f_B_norm())*h.xi(t,p))
 
 if savefig:

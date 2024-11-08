@@ -17,7 +17,7 @@ cphy = c.physical_constants
 zeta3 = sp.zeta(3)
 beta_const = 7 * zeta3/(80 * c.pi**2)
 xiGL_const = np.sqrt(7 * zeta3 / 20)
-beta_norm_wc_list = [-1, 2, 2, 2, -2]
+b_wc_list = [-1, 2, 2, 2, -2]
 
 # Physical constants
 kB = c.k

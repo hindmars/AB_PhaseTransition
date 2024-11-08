@@ -120,27 +120,54 @@ def gap_fit3(t, *pars):
     x = 1-t
     s = 0
     for n, p in enumerate(pars):
-        s += p*x**n
+        s += p*x**(n+1)
     return s**0.5
+
+def gap_fit4(t, *pars):
+    """
+
+    Best fit pars: 
+
+    """
+    # x = 1-t
+    s = 1 - t**2
+    # for n, p in enumerate(pars[:-2]):
+    #     s += p*x**(n+2)
+    s = s/(pars[0] + pars[1]*t)
+    return np.abs(s)**0.5
 
 def make_lab3(*pars):
     lab3 = ''
     for n, p in enumerate(pars):
         if n== 0:
-            lab3 += r'$[{:.3g} '.format(pars[n])
+            lab3 += r'$[{:.3g}x '.format(pars[n])
         else:
-            lab3 += '+ ({:.3g})x^{:d} '.format(pars[n], n)
+            lab3 += '+ ({:.3g})x^{:d} '.format(pars[n], n+1)
         
     lab3 += ']^{1/2}$'
     return lab3
         
+def make_lab4(*pars):
+    lab4 = ''
+    # lab4 = r'$[x '
+    # for n, p in enumerate(pars[:-2]):
+    #     # if n== 0:
+    #     #     lab4 += r'$[{:.3g} '.format(pars[n])
+    #     # else:
+    #     lab4 += '+ ({:.3g})x^{:d} '.format(pars[n], n+2)
+        
+    # lab4 += r']^{{1/2}}/[({:.3g}) + ({:.3g})t]^{{1/2}}$'.format(*pars[-2:])
+
+    lab4 += r'$[ 1 - t^2]^{{1/2}}/[({:.3g}) + ({:.3g})t]^{{1/2}}$'.format(*pars[-2:])
+    return lab4
 
 #%%
 popt1, pcov1 = scopt.curve_fit(gap_fit1, t_arr, D_arr/D_arr[0], p0=(4,))
 popt2, pcov2 = scopt.curve_fit(gap_fit2, t_arr, D_arr/D_arr[0], p0=(4,0.5))
-popt3, pcov3 = scopt.curve_fit(gap_fit3, t_arr, D_arr/D_arr[0], p0=(0,1,1,1))
+popt3, pcov3 = scopt.curve_fit(gap_fit3, t_arr, D_arr/D_arr[0], p0=(1,1,1))
+popt4, pcov4 = scopt.curve_fit(gap_fit4, t_arr, D_arr/D_arr[0], p0=(1,-1))
 
-print(popt1, popt2, popt3)
+print(popt1, popt2, popt3,popt4)
 
 #%%
 # From Muehlschleger 1959
@@ -163,12 +190,14 @@ muehl_delta = muehl_data[1::2]
 
 plt.plot(t_arr, gap_GL(t_arr), 'k--', label='GL gap')
 plt.plot(t_arr, D_arr, label='BCS gap')
-plt.plot(t_arr, D_arr[0]*gap_fit1(t_arr, *popt1), 
-         label=r'$\Delta_0(1 - t^{{ {:.3f} }})^{{ 0.5 }}$'.format(*popt1))
-plt.plot(t_arr, D_arr[0]*gap_fit2(t_arr, *popt2), 
-          label=r'$\Delta_0(1 - t^{{ {:.3f} }})^{{ {:.3f} }}$'.format(*popt2))
-plt.plot(t_arr, D_arr[0]*gap_fit3(t_arr, *popt3), 
-          label=make_lab3(*popt3))
+# plt.plot(t_arr, D_arr[0]*gap_fit1(t_arr, *popt1), 
+#          label=r'$\Delta_0(1 - t^{{ {:.3f} }})^{{ 0.5 }}$'.format(*popt1))
+# plt.plot(t_arr, D_arr[0]*gap_fit2(t_arr, *popt2), 
+#           label=r'$\Delta_0(1 - t^{{ {:.3f} }})^{{ {:.3f} }}$'.format(*popt2))
+# plt.plot(t_arr, D_arr[0]*gap_fit3(t_arr, *popt3), 
+#           label=make_lab3(*popt3))
+plt.plot(t_arr, D_arr[0]*gap_fit4(t_arr, *popt4), 
+          label=make_lab4(*popt4))
 plt.plot(muehl_t, D_arr[0]*muehl_delta,'k.', label=r'Muehlschlegel 1959')
 
 plt.xlabel(r'$T/T_c$')

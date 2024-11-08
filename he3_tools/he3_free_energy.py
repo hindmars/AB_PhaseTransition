@@ -16,6 +16,7 @@ import numpy as np
 import he3_props as h3p
 import he3_bases as h3b
 import he3_matrix as h3m
+import scipy.optimize as spo
 
 def args_parse(*args):
     n_el = len(args)
@@ -244,6 +245,16 @@ def dU_dA(A, *args):
         alpha material parameter, dimensionless.
     beta_norm_arr : ndarray, shape (5,1)
         beta material parameters, dimensionless.
+    gH_norm : float, optional
+        gH parameter, normalised.
+    gz_norm : float, normalised
+        gH parameter, normalised.
+    t : float, optional
+        reduced temperature
+    p : float, optional
+        pressure [bar]
+    H_T : float or ndarray shape (3,), optional
+        H field, (in tesla )
 
     Returns
     -------
@@ -358,3 +369,34 @@ def line_section(X, D, t, p, path='linear', scale=None, norm_preserve=False, n=5
     
     return v, A_XD, U_XD
 
+def get_A_ext(A_init, *args):
+    """
+    
+
+    Parameters
+    ----------
+    A_init : complex numpy array shape (3,3)
+        Order parameter initial guess.
+    *args : tuple
+        See Uargs_parse.
+        
+    Find extremum of potential U using Newton-Krylov method.
+
+    Returns
+    -------
+    complex numpy array shape (3,3)
+        Local extremum of potential nearest A_init.
+
+    """
+    
+
+    def F(A):
+        return dU_dA(A, *args)
+    
+    try:
+        A = spo.newton_krylov(F, A_init)
+    except spo.nonlin.NoConvergence as e:
+        A = e.args[0]
+        print('get_U_min: No Convergence')
+    
+    return A

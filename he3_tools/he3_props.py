@@ -58,7 +58,7 @@ def set_default(name, xval):
     report_setting(name)
     return 
 
-def beta_norm_wc(n):
+def b_wc(n):
     """
     Parameters
     ----------
@@ -73,10 +73,24 @@ def beta_norm_wc(n):
     """
     b = np.nan
     if n in [1,2,3,4,5]:
-        b = h3c.beta_norm_wc_list[n-1]
+        b = h3c.b_wc_list[n-1]
     else:
-        raise ValueError("beta_norm_wc: n should be 1, 2, 3, 4 , or 5")
+        raise ValueError("b_wc: n should be 1, 2, 3, 4 , or 5")
     return b
+
+def b_wc_array():
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+    b : float (or python default, usually is double)
+        Normalised b as (5,) shape array, for weak coupling app.
+
+    """
+    b = h3c.b_wc_list
+    return np.array(b)
 
 # Experimental data functions
 def Tc_mK_expt(p):
@@ -256,6 +270,55 @@ def N0(p):
     """
     return npart(p) * 1.5 / (h3c.mhe3_kg * mstar_m(p) * vf(p)**2)
 
+def tauN0(t, p):
+    """
+    Mean free timescale of quasiparticles (a.k.a. quasiparticle lifetime).
+    Uses simple approximation for $\tau_N^0$ gicen in Vollhardt and Woelfle, p36,
+    crediting Wheatley 1978.
+
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle lifetime in seconds.
+
+    """
+    
+    return 0.3e-6 /T_mK(t, p)**2
+    
+
+def mfp0(t, p):
+    """
+    Mean free path of quasiparticles.
+    Uses simple approximation for $\tau_N^0$ gicen in Vollhardt and Woelfle, p36,
+    crediting Wheatley 1978.
+
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle mean free path in nm.
+
+    """
+    
+    return vf(p)*tauN0(t, p)*1e9
+
 def gH(p):
     """
     Material parameter for Zeeman energy, quadratic in magnetic field H, in 
@@ -323,7 +386,7 @@ def f_scale(p):
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
     return (1/3) * N0(p) * (h3c.kB * T_mK(1, p) * 1e-3)**2
     
-def delta_beta_norm(p, n):
+def delta_b(p, n):
     """
     Strong coupling corrections to GL free energy material parameters, in units of 
     the modulus of the first weak coupling parameter.
@@ -354,21 +417,21 @@ def delta_beta_norm(p, n):
     if DEFAULT_SC_CORRS in sc_corrs_poly:
         db = h3d.dbeta_data_dict[DEFAULT_SC_CORRS][n-1](p)
     else:
-        db = delta_beta_norm_interp(p, n)
+        db = delta_b_interp(p, n)
     
     if DEFAULT_SC_ADJUST:
             db *= np.exp(-sc_adjust_fun(p))
     return db
 
-def delta_beta_norm_asarray(p):
+def delta_b_asarray(p):
     """
     Strong coupling corrections to material parameters, in units of 
     the modulus of the first weak coupling parameter, supplied as a (1,5) array.
     """
-    delta_beta_norm_list = [ delta_beta_norm(p, n) for n in range(1,6)]
-    return np.array(delta_beta_norm_list)
+    delta_b_list = [ delta_b(p, n) for n in range(1,6)]
+    return np.array(delta_b_list)
 
-def delta_beta_norm_interp(p, n): 
+def delta_b_interp(p, n): 
     """Interpolation methods for strong coupling corrections.
     """
     if DEFAULT_SC_CORRS in sc_corrs_interp:
@@ -380,7 +443,7 @@ def delta_beta_norm_interp(p, n):
                          DEFAULT_SC_CORRS)
         return
 
-def delta_beta_norm_polyfit(p, n): 
+def delta_b_polyfit(p, n): 
     """Polynomial methods for strong couping corrections. 
     """
     if DEFAULT_SC_CORRS in sc_corrs_poly:
@@ -410,10 +473,10 @@ def beta_norm(t, p, n):
     """Complete material parameter including strong coupling correction, within units of 
     f_scale/(2 * np.pi * kB * Tc)**2
     """ 
-    b = beta_norm_wc(n)
+    b = b_wc(n)
     # else:
     #     raise ValueError("beta_norm: n must be between 1 and 5")
-    return h3c.beta_const*(b + t * delta_beta_norm(p, n))
+    return h3c.beta_const*(b + t * delta_b(p, n))
 
 
 def beta_norm_asarray(t, p):
@@ -506,10 +569,10 @@ def delta_polar_norm(t, p):
 def t_AB(p, low_pressure_nan=True):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) 
-                       + (delta_beta_norm(p, 3) 
-                       - 2*delta_beta_norm(p, 4) 
-                       - 2*delta_beta_norm(p, 5))/3) 
+    t_ab_val = (1/3)/ (delta_b(p, 1) 
+                       + (delta_b(p, 3) 
+                       - 2*delta_b(p, 4) 
+                       - 2*delta_b(p, 5))/3) 
     
     if low_pressure_nan:
         if isinstance(t_ab_val, np.ndarray):

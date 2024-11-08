@@ -7,54 +7,9 @@ Created on Thu Jun  3 15:20:44 2021
 """
 
 """
-Simple routines for finding the critical bubble in He3 potential. 
+Simple routines for finding the critical bubble in He3 potential.
+
 Uses newton-krylov solver.
-
-Default potential is scaled so that: 
-    stable (broken) phase has order parameter phi = 1 i.e., true vacuum (superfluid B-Phase)
-    stable (broken) phase has potential = 0
-    potential grows phi**4/4
-
-Then there is only one free parameter, the value of phi at the maximum, phi_m, 
-and
-
-0 < phi_m < 0.5
-
-As phi_m -> 0.5 we approach the thin wall limit and the bubble grows 
-arbitraily large.
-
-As phi_m -> the barrier disappears and the critical bubble becomes a small bump of 
-vanishing low energy.
-
-To get started, try:
-    import critical_bubble_minimal as cbm
-    phi, pot, gr = cbm.krylov_bubble(0.4,display=True)
-
-First argument is phi_m.
-
-The computation is carried out on a default grid with 200 points and max radius 20
-You can change these values with e.g.
-
-    phi, pot, gr = cbm.krylov_bubble(0.45, gr_pars=(400,40))
-
-(this is more like a thin wall bubble)
-
-It also works in dimensions 1, 2, 3 and 4, e.g.
-
-    phi, pot, gr = cbm.krylov_bubble(0.45, gr_pars=(400,40), dim=4)
-
-If you want to know the energy
-
-    cbm.energy(phi, pot, gr)
-
-Enjoy!
-
-Mark
-3.6.21
-
-MH 13.7.21: One can get initialise the potential with a more conventional form of the potential, 
-resembling the Ginzburg-Landau free energy, by creating a quartic_paramset object, 
-and invoking the method  quartic_params_init. See accompanying file critical_bubble_demo
 
 """
 
@@ -67,6 +22,7 @@ import scipy.optimize.nonlin
 import scipy.linalg as sl
 
 import he3_tools as  h
+import he3_magnetic as  h3b
 
 # Stiffness parameter for configurations dependinng only on x
 Kxx = np.diag([3,1,1]) 
@@ -86,16 +42,23 @@ bcright = -1
 
 class material_paramset:
     """
-    Class for the material parameters of the static GL functional, including temperature and pressure dependence.
+    Class for the material parameters of the static GL functional, including 
+    temperature and pressure dependence.
 
-    A material_paramset object can also be directly passed to quartic_potential, along with a temperature.
+    A material_paramset object can also be directly passed to quartic_potential, 
+    along with a temperature.
     """
     def __init__(self, *args):
-        al, bn, t, p = h.args_parse(*args)
+        al, bn, gH, gz, t, p, H_vec = h.Uargs_parse(*args)
+        # al, bn, t, p = h.args_parse(*args)
         self.alpha = al
         self.beta_arr = bn
+        self.gH = gH
+        self.gz = gz
         self.t = t
         self.p = p
+        self.H_vec = H_vec
+        self.H = np.sqrt(np.sum(H_vec**2))
 
     def beta_A_norm(self):
         return np.sum( self.beta_arr * h.R_dict["A"] )
@@ -128,7 +91,7 @@ class material_paramset:
         return -0.25* self.alpha**2 /( self.beta_phase_norm(phase))
 
     def xi(self):
-        """Ginzburg Landau correlation length.
+        """Ginzburg Landau correlation length in nm.
         """
         if self.p is not None:
             xiGL = h.xi(self.t, self.p)
@@ -161,10 +124,12 @@ class quartic_potential:
         self.mat_pars = material_paramset(*args)
 
     def v(self, A):
-        return h.U(A, self.mat_pars.alpha, self.mat_pars.beta_arr)
+        # return h.U(A, self.mat_pars.alpha, self.mat_pars.beta_arr)
+        return h.U(A, *self.args)
     
     def v_prime(self, A):
-        return h.dU_dA(A, self.mat_pars.alpha, self.mat_pars.beta_arr)
+        # return h.dU_dA(A, self.mat_pars.alpha, self.mat_pars.beta_arr)
+        return h.dU_dA(A, *self.args)
         
     # def plot_line_section(self, X, Y, scale=None, n=500):
     #     v, A_XD, U_XD = h.line_section(X, Y, self.args, scale, n)
@@ -205,8 +170,9 @@ class thin_wall_bubble:
     
     def __init__(self, pot, dim=3):
         # self.surface_energy = np.sqrt(h.beta_const) * pot.mat_pars.delta_wc()**3/6
-        p = pot.mat_pars.p
-        self.surface_energy = - 0.95*pot.mat_pars.f_B_norm()*pot.mat_pars.xi()/h.xi(0,p)
+        self.p = pot.mat_pars.p
+        self.t = pot.mat_pars.t
+        self.surface_energy = - 0.95*pot.mat_pars.f_B_norm()*pot.mat_pars.xi()/h.xi(0,self.p)
         self.energy_diff = pot.mat_pars.f_A_norm() - pot.mat_pars.f_B_norm()
         if self.energy_diff > 0:
             if dim == 4:
@@ -421,6 +387,44 @@ def initial_condition_BB(pot, gr, left_phase="B", right_phase="B1"):
         
     return A_init
 
+def initial_condition_wall(pot, gr, left_phase="A", right_phase="B"):
+    """
+    Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub,
+    """
+    
+    t = pot.mat_pars.t
+    p = pot.mat_pars.p
+    
+    bub = thin_wall_bubble(pot, dim=gr.dim)
+    
+    m2 = 1/pot.mat_pars.xi()
+    k = np.sqrt(m2/4)
+
+    rb = bub.r_bub
+    if rb == np.inf:
+        rb = gr.R/2
+
+    print("Initialising thin-wall boundary at x = {:.1f}".format(rb))
+    phi_init = 0.25*(1 - np.tanh(k*(gr.x - rb)))*(1 + np.tanh(k*(gr.x + rb )))  
+
+    if isinstance(left_phase, str):
+        A_left = h.D_dict[left_phase]*h.delta_phase_norm(t, p, left_phase)
+    else:
+        A_left = left_phase
+        
+    if isinstance(right_phase, str):
+        A_right = h.D_dict[right_phase]*h.delta_phase_norm(t, p, right_phase)
+    else:
+        A_right = right_phase
+    
+
+    D = A_left - A_right
+    # D = D/h.norm(D)
+
+    A_init = A_right + np.multiply.outer(phi_init , D)         
+        
+    return A_init
+
 def expm_vec(x, T):
     """ Calculates exp(x * T), where T is a matrix and x an array.
     Returns array with shape x.shape + T.shape.
@@ -588,6 +592,34 @@ def krylov_BB(*args, gr_pars=(200,20), dim=1,
 
     return phi, pot, gr 
 
+def krylov_wall(*args, gr_pars=(200,20), dim=1, 
+                   left_phase="A", right_phase="B", 
+                   bcs = [bc_neu, bc_neu], **kwargs):
+    """
+    Apply Krylov solver to find wall solution interpolating between left_phase and
+    right_phase. 
+    
+    Returns: order parameter phi, the potential object, and the grid object.
+    """
+    
+    pot = quartic_potential(*args)
+    gr = grid_1d(*gr_pars, dim=dim, bcs=bcs)
+    
+    phi_init = initial_condition_wall(pot, gr, 
+                                         left_phase=left_phase, 
+                                         right_phase=right_phase)
+    
+    def field_eqn_fix(phi):
+        return field_eqn_with_bcs(phi, pot, gr)
+
+    try:
+        phi = newton_krylov(field_eqn_fix, phi_init, **kwargs)
+    except scipy.optimize.nonlin.NoConvergence as e:
+        phi = e.args[0]
+        print('No Convergence')
+
+    return phi, pot, gr 
+
 def relax(t_eval, *args, gr_pars=(200,20), dim=1):
 
     """
@@ -722,9 +754,13 @@ def plot_eigs(A, pot, gr, angm="orbital"):
     
     t = pot.mat_pars.t
     p = pot.mat_pars.p
+    H = pot.mat_pars.H
     eden, eden_grad, eden_pot = energy_density(A, pot, gr)
     # sigma_tot = np.trapz(eden, gr.x)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
-    sigma_bw = surface_energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
+    
+    xiGL = h.xi(t,p)
+    f_B_mag_norm = h3b.f_phase_mag_norm('B', t, p, H)
+    sigma_bw = surface_energy(A, pot, gr)*h.xi(0,p)/(abs(f_B_mag_norm)*xiGL)
 
     fig, ax = plt.subplots(2,1, sharex='col')
     # gridspec_kw={'hspace': 0, 'wspace': 0}
@@ -734,13 +770,14 @@ def plot_eigs(A, pot, gr, angm="orbital"):
     
     w_mu = gr.R * h.xi(0,p)/1000
     
-    ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm()) + 1)
+    ax[0].plot(x, eden/abs(f_B_mag_norm) + 1)
     
     ax[0].set_ylabel(r'$e/|f_B| + 1$')
     ax[0].grid()
     ax[0].set_xlim(xmin, xmax)
-    tstring1 = r'p={:.1f} bar, $T={:.2f}$ mK, $w={:.2f} \;\mu$m'.format(p, t*h.Tc_mK(p), w_mu)
-    tstring2 = r'$\sigma_{{bw}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.3f}$, '.format(sigma_bw)
+    # tstring1 = r'p={:.1f} bar, $T={:.2f}$ mK, $w={:.2f} \;\mu$m'.format(p, t*h.Tc_mK(p), w_mu)
+    tstring1 = r't = {:.3f}, T={:.2f} mK, p={:.1f} bar, H={:.2f} T'.format(t, t*h.Tc_mK(p), p, H)
+    tstring2 = r' $\xi_{{\rm GL}}(T) = {:.1f}$ nm'.format(xiGL) + r', $\sigma_{{bw}}/\xi_{{\rm GL}}(T)|f_B(T)| = {:.3f}$, '.format(sigma_bw)
     
     #Now plot eigenvalues
     if angm=="orbital":
@@ -752,12 +789,12 @@ def plot_eigs(A, pot, gr, angm="orbital"):
     else:
         raise ValueError("angm must be orbital or spin")
         
-    ax[0].set_title(tstring1 + '\n' + tstring2 + tstring3 )
+    ax[0].set_title(tstring1 + '\n' + tstring2 + tstring3, fontsize='smaller')
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
     
-    ax[1].plot(x, eigs[:,0]/norm**2, label=r'$\lambda_1$')
-    ax[1].plot(x, eigs[:,1]/norm**2, label=r'$\lambda_2$')
-    ax[1].plot(x, eigs[:,2]/norm**2, label=r'$\lambda_3$')
+    ax[1].plot(x, eigs[:,0]*norm**2, label=r'$\lambda_1$')
+    ax[1].plot(x, eigs[:,1]*norm**2, label=r'$\lambda_2$')
+    ax[1].plot(x, eigs[:,2]*norm**2, label=r'$\lambda_3$')
     
     ax[1].set_xlim(xmin, xmax)
     ax[1].legend(loc='best')
@@ -807,7 +844,7 @@ def get_wall(t, p, w, N=500, **kwargs):
     L = w/h.xi(0,p)
     # bcs = [bc_neu, bc_neu]
     
-    A, pot, gr = krylov_bubble(t, p, gr_pars=(N,L), dim=1, verbose=False, **kwargs)
+    A, pot, gr = krylov_wall(t, p, gr_pars=(N,L), dim=1, verbose=False, **kwargs)
 
     sigma_bw = surface_energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
     sigma_tot = energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
@@ -823,9 +860,18 @@ def plot_wall(A, pot, gr,
     comp_key = ('x', 'y', 'z')
     t = pot.mat_pars.t
     p = pot.mat_pars.p
+    try:
+        H = pot.mat_pars.H
+        # H = np.sqrt(np.sum(H_vec**2))
+    except:
+        H=0    
     xiGL = h.xi(t,p)
     eden, eden_grad, eden_pot = energy_density(A, pot, gr)
-    sigma = surface_energy(A, pot, gr)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
+    # f_B_mag_norm = h3b.f_B_mag_norm_approx(t, p, H)
+    f_B_mag_norm = h3b.f_phase_mag_norm('B', t, p, H)
+    f_A_mag_norm = h3b.f_phase_mag_norm('A', t, p, H)
+
+    sigma = surface_energy(A, pot, gr)*h.xi(0,p)/(abs(f_B_mag_norm)*h.xi(t,p))
 
     try: 
         bcs = gr.bcs
@@ -850,18 +896,18 @@ def plot_wall(A, pot, gr,
         
     fig, ax = plt.subplots(2,1, sharex='col')
     # gridspec_kw={'hspace': 0, 'wspace': 0}
-    ax[0].plot(x, eden/abs(pot.mat_pars.f_B_norm()) + 1, label="Total")
-    ax[0].plot(x, eden_pot/abs(pot.mat_pars.f_B_norm()) + 1, label="Bulk")
+    ax[0].plot(x, eden/abs(f_B_mag_norm) + 1, label="Total")
+    ax[0].plot(x, eden_pot/abs(f_B_mag_norm) + 1, label="Bulk")
     
     ax[0].set_ylabel(r'$e/|f_B|+1$')
     ax[0].grid()
     ax[0].set_xlim(xmin, xmax)
     # ax[0].legend(loc='center right', title=r'Excess over $f_B$')
     ax[0].legend(bbox_to_anchor=(1.025, 0.5, 0.25, 0.5), title=r'Excess over $f_B$')
-    title_string = r'T={:.2f} mK, p={:.1f} bar' + '\n' \
+    title_string = r't = {:.3f}, T={:.2f} mK, p={:.1f} bar, H={:.2f} T' + '\n' \
         + r' $\xi_{{\rm GL}}(T) = {:.1f}$ nm, $\sigma/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$'\
         + title_extra
-    ax[0].set_title(title_string.format(t*h.Tc_mK(p), p, xiGL, sigma), fontsize=10)
+    ax[0].set_title(title_string.format(t, t*h.Tc_mK(p), p, H, xiGL, sigma), fontsize=10)
     
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
     
@@ -885,7 +931,7 @@ def plot_wall(A, pot, gr,
     
     ax[1].set_xlim(xmin, xmax)
     # ax[1].legend(loc='center right')
-    ax[1].legend(bbox_to_anchor=(1.025, 0.05, 0.25, 1.0))
+    ax[1].legend(bbox_to_anchor=(1.025, 0.05, 0.25, 1.0), fontsize='x-small')
     ax[1].grid()
     ax[1].set_ylabel(r'$A \sqrt{3}/\Delta_B(T,p)$')
     ax[1].set_xlabel(r'$x/\xi_{\rm GL}(T)$')

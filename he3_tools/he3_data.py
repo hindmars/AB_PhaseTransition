@@ -16,7 +16,7 @@ import he3_constants as h3c
 def convert_b_to_db(b_list, n):
     db_list = []
     for b in b_list:
-        db_list.append(b - h3c.beta_norm_wc_list[n-1])
+        db_list.append(b - h3c.b_wc_list[n-1])
     return db_list
 
 
