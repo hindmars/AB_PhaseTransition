@@ -327,19 +327,25 @@ def line_section(X, D, t, p, path='linear', scale=None, norm_preserve=False, n=5
         delta_X = h3p.delta_phase_norm(t, p, X)
         X = h3b.D_dict[X]
         A_0 = X * delta_X
-        if isinstance(D, str):
-            delta_Y = h3p.delta_phase_norm(t, p, D)
-            Y = h3b.D_dict[D]
-            A_1 = Y * delta_Y
-            # A_XD = np.multiply.outer( 1-v , X)*delta_X + np.multiply.outer( v , Y)*delta_Y
-        else:
-            A_1 = A_0 + D * scale
-            # A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
     else:
         # diff = D - X
         # A_XD = np.multiply.outer( np.ones_like(v) , X) + np.multiply.outer( v , diff)
         A_0 = X
-        A_1 = D
+        
+    if isinstance(D, str):
+        delta_Y = h3p.delta_phase_norm(t, p, D)
+        Y = h3b.D_dict[D]
+        A_1 = Y * delta_Y
+        # A_XD = np.multiply.outer( 1-v , X)*delta_X + np.multiply.outer( v , Y)*delta_Y
+    else:
+        # diff = D - X
+        # A_XD = np.multiply.outer( np.ones_like(v) , X) + np.multiply.outer( v , diff)
+        # A_1 = D
+
+        # else:
+        A_1 = A_0 + D * scale
+            # A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
+
 
     if path == 'linear':
         A_XD = np.multiply.outer( 1-v , A_0) + np.multiply.outer( v , A_1)

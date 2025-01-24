@@ -41,11 +41,17 @@ sc_corr_adj_pol = nppoly.Polynomial([0])
 SET_ALPHA_TYPE = {"GL", "BCS"}
 DEFAULT_ALPHA_TYPE = "GL"
 
+def get_setting(name):
+    """Gets value of a globally defined variable.
+    """
+    return globals()[name]
+
 def report_setting(name):
     """Reports value of a globally defined variable.
     """
     xval = globals()[name]
     print("he3_tools:", type(xval), "variable " + name + " set to", xval)
+    return
 
 def set_default(name, xval):
     """Sets value of a globally defined variable.
@@ -270,6 +276,19 @@ def N0(p):
     """
     return npart(p) * 1.5 / (h3c.mhe3_kg * mstar_m(p) * vf(p)**2)
 
+def Gi(p):
+    """Ginzrurg number at pressure p.
+    
+    Gi = N(0) * xi0(p)**3 * kB * T_c(p)
+    
+    N(0) - density of states at Fermi surface
+    xi0  - Cooper pair correlation length
+    T_c  - normal/superfluid critical temperature
+    
+    """
+    
+    return N0(p) * xi0(p)**3 * h3c.kB * Tc_mK(p)*1e-3
+
 def tauN0(t, p):
     """
     Mean free timescale of quasiparticles (a.k.a. quasiparticle lifetime).
@@ -384,7 +403,7 @@ def f_scale(p):
     """ Natural free energy density scale, units Joule per nm3 .
     """
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
-    return (1/3) * N0(p) * (h3c.kB * T_mK(1, p) * 1e-3)**2
+    return (1/3) * N0(p) * (h3c.kB * Tc_mK(p) * 1e-3)**2
     
 def delta_b(p, n):
     """
@@ -423,12 +442,12 @@ def delta_b(p, n):
             db *= np.exp(-sc_adjust_fun(p))
     return db
 
-def delta_b_asarray(p):
+def delta_b_asarray(p, n_list=range(1,6)):
     """
     Strong coupling corrections to material parameters, in units of 
     the modulus of the first weak coupling parameter, supplied as a (1,5) array.
     """
-    delta_b_list = [ delta_b(p, n) for n in range(1,6)]
+    delta_b_list = [ delta_b(p, n) for n in n_list]
     return np.array(delta_b_list)
 
 def delta_b_interp(p, n): 
@@ -497,7 +516,7 @@ def beta_phase_norm(t, p, phase):
     return np.sum( beta_norm_asarray(t, p) * h3b.R_dict[phase] )
 
 def f_phase_norm(t, p, phase):
-    """Normalised free energy in a givenn phase.
+    """Normalised free energy in a given phase.
     """
     return -0.25* alpha_norm(t)**2 /( beta_phase_norm(t, p, phase))
 
@@ -630,16 +649,30 @@ def mass_B_norm(t, p, JC):
 
     return np.sqrt(m2)        
 
+# Now in he3_magnetic
 
-def critical_radius(t, p, sigma=0.95, dim=3):
-    """Radius of critical bubble, in nm.  
-    Ideally will optionally use function to get 
-    surface tension. Uses approximation."""
-    # if isinstance(sigma_fun, float):
-    sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
-    # elif isinstance(sigma_fun, np.ndarray):
-        # sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
+# def critical_radius(t, p, sigma=0.95, dim=3):
+#     """Radius of critical bubble, in nm.  
+#     Ideally will optionally use function to get 
+#     surface tension. Uses approximation."""
+#     # if isinstance(sigma_fun, float):
+#     sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
+#     # elif isinstance(sigma_fun, np.ndarray):
+#         # sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
     
-    return (dim-1)*sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
+#     return (dim-1)*sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
+
+# def critical_energy_kBTc(t, p, sigma=0.95, dim=3):
+#     """Energy of critical bubble, in units of kBTc.  
+#     Uses thin wall & Ginzburg-Landau approximation.
+#     """
+
+#     Rc = critical_radius(t, p, sigma, dim)
+#     sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
+#     delta_fAB = np.abs(f_A_norm(t, p) - f_B_norm(t, p))
+    
+#     Ec = f_scale(p)*(4*np.pi*sigma_AB*Rc**2 - (4*np.pi/3)*delta_fAB*Rc**3)
+    
+#     return Ec/(h3c.kB*Tc_mK(p)*1e-3)
 
 
