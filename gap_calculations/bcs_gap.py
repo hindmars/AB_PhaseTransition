@@ -88,7 +88,9 @@ def gap_eqn(D, t):
 def gap_GL(t): 
     return const * np.sqrt(1-t)
 
-t_arr = np.linspace(0.002, 1, 500, endpoint=False)
+#%%
+
+t_arr = np.linspace(0.002, 1, 100, endpoint=False)
 
 D_arr = np.array([float(scopt.fsolve(gap_eqn, 0.1, args=(t,))) for t in t_arr])
 

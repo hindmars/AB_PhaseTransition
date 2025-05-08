@@ -232,6 +232,77 @@ def U_terms(A, *args):
     fHn1 = - 1j * gz * np.dot(h3m.levi_civita3_matrix2vector(AA_H), H)    
     return np.array([Un0, Un1, Un2, Un3, Un4, Un5, fHn2, fHn1])
 
+def R_terms(A):
+    """
+    Quartic invariants of bulk free energy for superfluid He3
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter.
+
+    Returns
+    -------
+    float or ndarray
+        Normalised quartic invariants of free energy, array of shape (5, A.shape[3])
+
+    """
+    dim = A.ndim
+        
+    A_T = np.swapaxes(A, dim-2, dim-1)
+    A_H = np.conj(A_T)
+
+    AA_H = np.matmul(A , A_H)
+    AA_T = np.matmul(A , A_T)
+    
+    Rn1 = h3m.tr( AA_T) * np.conj(h3m.tr( AA_T))
+    Rn2 = h3m.tr( AA_H )**2
+    Rn3 = h3m.tr( np.matmul( AA_T , np.conj(AA_T))  )
+    Rn4 = h3m.tr( np.matmul( AA_H , AA_H )  )
+    Rn5 = h3m.tr( np.matmul( AA_H , np.conj(AA_H) )  )
+
+    return np.array([Rn1, Rn2, Rn3, Rn4, Rn5])/Rn2
+
+def phase_detector(A, thresh=1/12, norm_thresh=1/12):
+    
+    r_terms = R_terms(A)
+    
+    r_terms_norm = r_terms
+    
+    phase_array_dict = {}
+    
+    for phase in h3b.R_phase_dict:
+        r_dist = np.abs(r_terms_norm - h3b.R_phase_dict[phase][:, None])
+        phase_array_dict[phase] = (np.all(r_dist < thresh, axis=0))
+    
+    # phase_array_dict['N'] = r_terms[1] < norm_thresh
+    
+    return phase_array_dict
+    
+def phase_marker(A, thresh=1/12, norm_thresh=1/12):
+    
+    pa_dict = phase_detector(A, thresh=thresh, norm_thresh=norm_thresh)
+    
+    pa_arr = np.array(list(pa_dict.values()))
+    
+    # print('pa_arr.shape', pa_arr.shape)
+    
+    col_sum = np.sum(pa_arr, axis=0)
+    
+    is_definite_phase = (col_sum == 1)
+    
+    # phase_mask = np.tile(np.array(h3b.inert_phases), [len(col_sum), 1]).T
+    phase_mask = np.tile(range(len(h3b.inert_phases)), [len(col_sum), 1]).T
+    
+    phase_arr = np.full_like(col_sum, -1, dtype=int)
+    # print('phase_mask.shape', phase_mask.shape)
+    
+    #This doesn't work as I expected - need transposees to do it right
+    phase_arr[is_definite_phase] = phase_mask.T[pa_arr.T].T
+    # print('phase_arr.shape', phase_arr.shape)
+    
+    return phase_arr
+    
 
 def dU_dA(A, *args):
     """
@@ -327,19 +398,25 @@ def line_section(X, D, t, p, path='linear', scale=None, norm_preserve=False, n=5
         delta_X = h3p.delta_phase_norm(t, p, X)
         X = h3b.D_dict[X]
         A_0 = X * delta_X
-        if isinstance(D, str):
-            delta_Y = h3p.delta_phase_norm(t, p, D)
-            Y = h3b.D_dict[D]
-            A_1 = Y * delta_Y
-            # A_XD = np.multiply.outer( 1-v , X)*delta_X + np.multiply.outer( v , Y)*delta_Y
-        else:
-            A_1 = A_0 + D * scale
-            # A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
     else:
         # diff = D - X
         # A_XD = np.multiply.outer( np.ones_like(v) , X) + np.multiply.outer( v , diff)
         A_0 = X
-        A_1 = D
+        
+    if isinstance(D, str):
+        delta_Y = h3p.delta_phase_norm(t, p, D)
+        Y = h3b.D_dict[D]
+        A_1 = Y * delta_Y
+        # A_XD = np.multiply.outer( 1-v , X)*delta_X + np.multiply.outer( v , Y)*delta_Y
+    else:
+        # diff = D - X
+        # A_XD = np.multiply.outer( np.ones_like(v) , X) + np.multiply.outer( v , diff)
+        # A_1 = D
+
+        # else:
+        A_1 = A_0 + D * scale
+            # A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
+
 
     if path == 'linear':
         A_XD = np.multiply.outer( 1-v , A_0) + np.multiply.outer( v , A_1)

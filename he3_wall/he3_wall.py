@@ -24,6 +24,9 @@ import scipy.linalg as sl
 import he3_tools as  h
 import he3_magnetic as  h3b
 
+phase_col_dict = dict(zip(h.inert_phases, h.alt_colorblind_list))
+
+
 # Stiffness parameter for configurations dependinng only on x
 Kxx = np.diag([3,1,1]) 
 
@@ -530,7 +533,7 @@ def krylov_bubble(*args, gr_pars=(200,20), dim=3,
     try:
 
         phi = newton_krylov(field_eqn_fix, phi_init, verbose=verbose, maxiter=maxiter, **kwargs)
-    except scipy.optimize.nonlin.NoConvergence as e:
+    except scipy.optimize.NoConvergence as e:
         phi = e.args[0]
         print('No Convergence')
 
@@ -560,7 +563,7 @@ def krylov_confine(*args, gr_pars=(200,20), dim=1,
 
     try:
         phi = newton_krylov(field_eqn_fix, phi_init, **kwargs)
-    except scipy.optimize.nonlin.NoConvergence as e:
+    except scipy.optimize.NoConvergence as e:
         phi = e.args[0]
         print('No Convergence')
 
@@ -586,7 +589,7 @@ def krylov_BB(*args, gr_pars=(200,20), dim=1,
 
     try:
         phi = newton_krylov(field_eqn_fix, phi_init, **kwargs)
-    except scipy.optimize.nonlin.NoConvergence as e:
+    except scipy.optimize.NoConvergence as e:
         phi = e.args[0]
         print('No Convergence')
 
@@ -614,7 +617,7 @@ def krylov_wall(*args, gr_pars=(200,20), dim=1,
 
     try:
         phi = newton_krylov(field_eqn_fix, phi_init, **kwargs)
-    except scipy.optimize.nonlin.NoConvergence as e:
+    except scipy.optimize.NoConvergence as e:
         phi = e.args[0]
         print('No Convergence')
 
@@ -856,6 +859,8 @@ def plot_wall(A, pot, gr,
               real_comp_list=[(0,0), (1,1), (2,2)], 
               imag_comp_list = [(0,1), (1,0)], 
               plot_gap=False, 
+              phase_marker=False,
+              total_energy=False,
               legend_loc='center right', title_extra=''):
     comp_key = ('x', 'y', 'z')
     t = pot.mat_pars.t
@@ -867,6 +872,9 @@ def plot_wall(A, pot, gr,
         H=0    
     xiGL = h.xi(t,p)
     eden, eden_grad, eden_pot = energy_density(A, pot, gr)
+
+    r_terms =  h.R_terms(A)
+
     # f_B_mag_norm = h3b.f_B_mag_norm_approx(t, p, H)
     f_B_mag_norm = h3b.f_phase_mag_norm('B', t, p, H)
     f_A_mag_norm = h3b.f_phase_mag_norm('A', t, p, H)
@@ -894,7 +902,7 @@ def plot_wall(A, pot, gr,
                 
         
         
-    fig, ax = plt.subplots(2,1, sharex='col')
+    fig, ax = plt.subplots(3,1, figsize=(5,6), sharex='col')
     # gridspec_kw={'hspace': 0, 'wspace': 0}
     ax[0].plot(x, eden/abs(f_B_mag_norm) + 1, label="Total")
     ax[0].plot(x, eden_pot/abs(f_B_mag_norm) + 1, label="Bulk")
@@ -907,7 +915,6 @@ def plot_wall(A, pot, gr,
     title_string = r't = {:.3f}, T={:.2f} mK, p={:.1f} bar, H={:.2f} T' + '\n' \
         + r' $\xi_{{\rm GL}}(T) = {:.1f}$ nm, $\sigma/\xi_{{\rm GL}}(T)|f_B(T)| = {:.2f}$'\
         + title_extra
-    ax[0].set_title(title_string.format(t, t*h.Tc_mK(p), p, H, xiGL, sigma), fontsize=10)
     
     norm =  np.sqrt(3)/h.delta_B_norm(t, p) 
     
@@ -920,6 +927,9 @@ def plot_wall(A, pot, gr,
                    label=r'${{\rm Im}}(A_{{ {} {} }})$'.format(comp_key[comp[0]], comp_key[comp[1]])
                    )
     
+    for n, r_term in enumerate(r_terms[:5]):
+        ax[2].plot(x, r_term, label=rf'$R_{n+1:}(A)$', c=h.ibm_colorblind_list[n])
+    
     # ax[1].plot(x, norm*A[:, 0, 0].real, label=r'${\rm Re}(A_{xx})$')
     # ax[1].plot(x, norm*A[:, 1, 1].real, label=r'${\rm Re}(A_{yy})$')
     # ax[1].plot(x, norm*A[:, 2, 2].real, label=r'${\rm Re}(A_{zz})$')
@@ -927,15 +937,57 @@ def plot_wall(A, pot, gr,
     # ax[1].plot(x, norm*A[:, 1, 0].imag, label=r'${\rm Im}(A_{yx})$')
     
     if plot_gap:
+        # ax[1].plot(x, np.gradient(norm*h.norm(A, 2), x), 'k--', label=r'$||A||^2$')
         ax[1].plot(x, norm*h.norm(A), 'k--', label=r'$||A||$')
     
-    ax[1].set_xlim(xmin, xmax)
+    # thresh=1/12
+    
+    if phase_marker:
+        phase_arr = h.phase_marker(A)
+        phase_left = phase_arr[0]
+        phase_right = phase_arr[-1]
+        
+        x_L_end   = np.max(x[ (x < 0) & (phase_arr == phase_left)])
+        x_R_start = np.min(x[ (x > 0) & (phase_arr == phase_right)])
+        
+        # print(phase_left, phase_right, x_A_end, x_B_start)
+
+        phase_color_list = h.alt_colorblind_list + [None]
+
+        for n in range(len(x[:-1])):
+        
+            # ax[2].fill_betweenx([0,1], x[n], x[n+1], color=h.alt_colorblind_list[phase_arr[n]], alpha=0.1)
+
+            if phase_arr[n] >= 0:
+                ax[2].add_patch(plt.Polygon([(x[n],0),(x[n+1],0),(x[n+1],1),(x[n],1)], 
+                                            facecolor=phase_color_list[phase_arr[n]],
+                                            alpha=0.2))
+    
+    ax[2].set_xlim(xmin, xmax)
     # ax[1].legend(loc='center right')
     ax[1].legend(bbox_to_anchor=(1.025, 0.05, 0.25, 1.0), fontsize='x-small')
     ax[1].grid()
     ax[1].set_ylabel(r'$A \sqrt{3}/\Delta_B(T,p)$')
-    ax[1].set_xlabel(r'$x/\xi_{\rm GL}(T)$')
+    ax[2].set_xlabel(r'$x/\xi_{\rm GL}(T)$')
 
+    ax[2].grid(True)
+    ax[2].legend(bbox_to_anchor=(1.025, 0.05, 0.25, 1.0), fontsize='x-small')
+    
+    ax[2].set_ylim(0,1.1)
+    
+    title_str = title_string.format(t, t*h.Tc_mK(p), p, H, xiGL, sigma) 
+    
+    if phase_marker:
+        title_str += r'. $L_w/\xi_GL(T) = {:.2f}$'.format(x_R_start - x_L_end)
+    
+    if total_energy:
+        sigma_tot = np.trapz(eden, gr.x)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
+        title_str += r'. $\sigma_{{\rm tot}}/\xi_GL(T)|f_B(T)| = {:.2f}$'.format(sigma_tot)
+
+    
+    ax[0].set_title(title_str, fontsize=10)
+
+    
     plt.tight_layout()
 
     return ax

@@ -41,11 +41,17 @@ sc_corr_adj_pol = nppoly.Polynomial([0])
 SET_ALPHA_TYPE = {"GL", "BCS"}
 DEFAULT_ALPHA_TYPE = "GL"
 
+def get_setting(name):
+    """Gets value of a globally defined variable.
+    """
+    return globals()[name]
+
 def report_setting(name):
     """Reports value of a globally defined variable.
     """
     xval = globals()[name]
     print("he3_tools:", type(xval), "variable " + name + " set to", xval)
+    return
 
 def set_default(name, xval):
     """Sets value of a globally defined variable.
@@ -270,11 +276,46 @@ def N0(p):
     """
     return npart(p) * 1.5 / (h3c.mhe3_kg * mstar_m(p) * vf(p)**2)
 
+def Gi(p):
+    """Ginzrurg number at pressure p.
+    
+    Gi = N(0) * xi0(p)**3 * kB * T_c(p)
+    
+    N(0) - density of states at Fermi surface
+    xi0  - Cooper pair correlation length
+    T_c  - normal/superfluid critical temperature
+    
+    """
+    
+    return N0(p) * xi0(p)**3 * h3c.kB * Tc_mK(p)*1e-3
+
+def tGL(p):
+    r"""
+    Ginzburg-Landau time, defined as 
+    $$
+    t_{\rm GL} = \xi_{\rm GL}(p)/ v_F(p)
+    $$
+    where $\xi_{\rm GL}$ is the zero-temperature coherence length and $v_F$ is 
+    the Fermi velocity.
+    
+    Parameters
+    ----------
+    p : float, int or numpy.ndarray
+        Pressure in bar.
+
+    Returns
+    -------
+    float, int or numpy.ndarray
+        GL time.
+
+    """
+    return xi(0, p)/vf(p)
+
 def tauN0(t, p):
     """
     Mean free timescale of quasiparticles (a.k.a. quasiparticle lifetime).
     Uses simple approximation for $\tau_N^0$ gicen in Vollhardt and Woelfle, p36,
-    crediting Wheatley 1978.
+    crediting Wheatley 1978. DEPRECATED in favour of tau_qp
 
     Parameters
     ----------
@@ -292,8 +333,47 @@ def tauN0(t, p):
 
     """
     
-    return 0.3e-6 /T_mK(t, p)**2
+    return 0.3e-6 /T_mK(t, p)**2 
+
+def tau_qp(t, p):
+    """
+    Mean free scattering time of quasiparticles (a.k.a. quasiparticle lifetime).
+    Uses Greywall 1984 data, and enforces Greywall temparature.
+
+    Units: s
     
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle lifetime in seconds.
+
+    """
+    p_data = h3d.data_Gre86_therm_cond[:,0]
+    tauT2_data = h3d.data_Gre86_therm_cond[:,5]
+    
+    # Greywall is in sec/K^2, same as musec/mK^2
+    tauT2_interp = np.interp(p, p_data, tauT2_data)
+    print(p, tauT2_interp)
+    
+    if get_setting('DEFAULT_T_SCALE') != 'Greywall':
+        tmp_set = get_setting('DEFAULT_T_SCALE')
+        set_default('DEFAULT_T_SCALE', 'Greywall')
+        T = T_mK(t, p)
+        set_default('DEFAULT_T_SCALE', tmp_set)
+    else:
+        T = T_mK(t, p)
+    print(p, tauT2_interp, T)
+    
+    return tauT2_interp /T**2 * 1e-6
 
 def mfp0(t, p):
     """
@@ -318,6 +398,30 @@ def mfp0(t, p):
     """
     
     return vf(p)*tauN0(t, p)*1e9
+
+def mfp_qp(t, p):
+    """
+    Mean free path of quasiparticles.  Uses Greywall data for $\tau_qp$. 
+    
+    Units: nm
+
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle mean free path in nm.
+
+    """
+    
+    return vf(p)*tau_qp(t, p)*1e9
 
 def gH(p):
     """
@@ -384,7 +488,7 @@ def f_scale(p):
     """ Natural free energy density scale, units Joule per nm3 .
     """
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
-    return (1/3) * N0(p) * (h3c.kB * T_mK(1, p) * 1e-3)**2
+    return (1/3) * N0(p) * (h3c.kB * Tc_mK(p) * 1e-3)**2
     
 def delta_b(p, n):
     """
@@ -423,12 +527,12 @@ def delta_b(p, n):
             db *= np.exp(-sc_adjust_fun(p))
     return db
 
-def delta_b_asarray(p):
+def delta_b_asarray(p, n_list=range(1,6)):
     """
     Strong coupling corrections to material parameters, in units of 
     the modulus of the first weak coupling parameter, supplied as a (1,5) array.
     """
-    delta_b_list = [ delta_b(p, n) for n in range(1,6)]
+    delta_b_list = [ delta_b(p, n) for n in n_list]
     return np.array(delta_b_list)
 
 def delta_b_interp(p, n): 
@@ -497,7 +601,7 @@ def beta_phase_norm(t, p, phase):
     return np.sum( beta_norm_asarray(t, p) * h3b.R_dict[phase] )
 
 def f_phase_norm(t, p, phase):
-    """Normalised free energy in a givenn phase.
+    """Normalised free energy in a given phase.
     """
     return -0.25* alpha_norm(t)**2 /( beta_phase_norm(t, p, phase))
 
@@ -592,6 +696,339 @@ def TAB_mK(p):
     """
     return tAB(p) * Tc_mK_expt(p)
 
+# specific heats
+
+def C_V_normal(t, p):
+    """
+    Normal phase specific heat in units J / K / nm$^3$, with strong coupling 
+    corrections included.  Uses formula (2.13) from Vollhardt & Woelfle.
+    $$
+    C_V = \frac{\pi^2}{3} N_F k_B^2 T
+    $$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Normal phase specific heat at temperature $t$ and pressure p.
+
+    """
+    
+    return (np.pi**2/3) * h.N0(p) * h.kB**2 *( h.Tc_mK(p)/1000) * t    
+
+def C_V_normal(t, p):
+    """
+    Normal phase specific heat in units J / K / nm$^3$, with strong coupling 
+    corrections included.  Uses formula (2.13) from Vollhardt & Woelfle.
+    $$
+    C_V = \frac{\pi^2}{3} N_F k_B^2 T
+    $$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Normal phase specific heat at temperature $t$ and pressure p.
+
+    """
+    
+    # return (np.pi**2/3) * N0(p) * h3c.kB**2 *(Tc_mK(p)/1000) * t    
+    return  np.pi**2 * f_scale(p) / (Tc_mK(p)/1000) * t
+
+
+def delta_C_V_Tc(p, phase):
+    """
+    Jump in specific heat at superfluid phase transition in units J / K / nm$^3$, 
+    with strong coupling corrections included.  Uses formula (3.78) from 
+    Vollhardt & Woelfle.
+    $$
+    \Delta C_V = \frac{1} N(0) \frac{\partial}{\partial T} \langle \Delta_{\bf k}^\dagger \Delta_{\bf k} \rangle_{\hat{\bf k}}
+    $$
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+    phase : str
+        Phase string, e.g. "A", "B".
+        
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Specific heat jump at pressure p.
+
+    """
+    return  0.25 * f_scale(p) / (Tc_mK(p)/1000 * beta_phase_norm(1, p, phase))
+
+def C_V(t, p, phase):
+    """
+    Specific heat in given phase, with strong coupling 
+    corrections included.  Uses formula (3.77) from Vollhardt & Woelfle.
+    $$
+    C_V = C_N + \Delta C_V
+    $$
+
+    Units:  units J / K / nm$^3$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Specific heat at temperature $t$ and pressure p.
+
+    """
+    return C_V_normal(t,p) + delta_C_V_Tc(p, phase)
+
+def kappa_0(t, p):
+    """
+    Gas-kinetic expression for thermal conductivity, V&W eqn 2.40.  
+    
+    Units: J / ns / nm / K
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Gas-kinetic thermal conductivity at temperature $t$ and pressure p.
+
+    """
+    # C_V is in J / K / nm^3, vf is in m/s (also nm/ns), tau_qp is in seconds
+    return (1/3) * C_V_normal(t, p) * (vf(p))**2 * tau_qp(t, p) * 1e9
+
+def kappa(t, p):
+    """
+    Experimental thermal conductivity, Greywall 1984  
+    
+    Units:    J / ns / nm / K
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Measured thermal conductivity at temperature $t$ and pressure p.
+
+    """
+    p_data = h3d.data_Gre86_therm_cond[:, 0]
+    kappaT_data = h3d.data_Gre86_therm_cond[:, 4]
+    
+    # Greywall is in erg/sec/cm, convert to J/ns/nm 
+    kappaT_interp = np.interp(p, p_data, kappaT_data) * 1e-7/(1e9 * 1e9 * 1e-2)
+
+    if get_setting('DEFAULT_T_SCALE') != 'Greywall':
+        tmp_set = get_setting('DEFAULT_T_SCALE')
+        set_default('DEFAULT_T_SCALE', 'Greywall')
+        T = T_mK(t, p)*1e-3
+        set_default('DEFAULT_T_SCALE', tmp_set)
+    else:
+        T = T_mK(t, p)*1e-3
+
+    print(p, T, kappaT_interp)
+
+    return kappaT_interp/T
+
+def gamma_c(p):
+    """
+    Order parameter damping rate at $T_c$. Units are ns$^{-1}$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Order parameter damping rate at $T_c$
+
+    """
+    return (16 * h3c.kB * Tc_mK(p)*1e-3) / (np.pi * h3c.hbar) * 1e-9
+
+def thermal_diffusivity(t, p):
+    r"""
+    Thermal diffusivity, defined as
+    $$
+    D_t = \kappa / C_V,
+    $$
+    where $\kappa$ is thermal conductivity and $C_V$ is volumetric heat capacity.
+    
+    Units: nm$^2$ / ns
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Thermal diffusivity.
+
+    """
+    return kappa(t, p)/C_V_normal(t, p)
+
+def thermal_diffusivity_norm(t, p):
+    r"""
+    Dimensionless thermal diffusivity, defined as
+    $$
+    D_t t_{\rm GL} / \xi_{\rm GL}^2
+    $$
+    where $\xi_{\rm GL}$ is the zero-temperature GL coherence length and 
+    $t_{\rm GL} = \xi_{\rm GL}/v_f$ is the GL time.    
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Thermal diffusivity.
+
+    """
+    return thermal_diffusivity(t, p) * tGL(p) / xi(0, p)**2
+
+def diffusion_relaxation_length(p):
+    r"""
+    A length scale derived from the thermal diffusivity (dimesnions L$^2$ / T) 
+    and the order parameter relaxation time at the critical temperature 
+    $\gamma_c$, dimensions T${-1}$.
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Diffusion relaxation length.
+
+    """
+    return (thermal_diffusivity(1, p) / gamma_c(p)  )**0.5
+
+def hot_blob_length_scale(p, phase='A'):
+    """
+    Length scale of a normal region produced by 1 eV energy, injected into 
+    superfluid in given phase at zero temperature, defined as 
+    $$
+    L = (C_V T_c/ 1 {\rm eV})^{-1/3}
+    $$
+    Units: nm.
+    
+    Radius of hot blob would contain geometric factors from region shape, and 
+    algebraic factors from integration of temperature between $0$ and $T_c$.
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray 
+        Pressure in bar.
+
+    Returns
+    -------
+    type(p)
+        Length scale of the heated region, in nm..
+
+    """
+    C_V_Tc = C_V_normal(1, p) + delta_C_V_Tc(p, phase)
+    return (Tc_mK(p)/1000 * C_V_Tc/h3c.c.e)**(-1/3)
+
+def hot_blob_size(p, t, Q_eV, phase='A'):
+    """
+    Size of a normal region produced by Q_eV energy, injected into 
+    superfluid in given phase at reduced temperature t. 
+    
+    Units: nm.
+    
+    Radius of hot blob would contain geometric factors from region shape, and 
+    algebraic factors from integration of temperature between $0$ and $T_c$.
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray 
+        Pressure in bar.
+
+    Returns
+    -------
+    type(p)
+        Length scale of the heated region, in nm..
+
+    """
+    return hot_blob_length_scale(p, phase='A') * (Q_eV/(1 - t))**(1/3)
+
+def hot_blob_quench_time(p, t, Q_eV=1.0, phase='A'):
+    """
+    Quench time of a normal region produced by Q_eV energy, injected into 
+    superfluid in given phase at reduced temperature t. 
+    
+    Units: ns.
+    
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray 
+        Pressure in bar.
+
+    Returns
+    -------
+    type(p)
+        Quench time for hot blob, in ns..
+
+    """
+    return hot_blob_size(p, t, Q_eV, phase='A')**2/thermal_diffusivity(t, p) *1/(1-t)
+
 # Generate SC adjustment factor
 def logf_poly():
     p = np.linspace(h3d.p_pcp_bar, 34, 100)
@@ -629,17 +1066,5 @@ def mass_B_norm(t, p, JC):
         m2 = (- beta_norm(t, p, 1)) / bb
 
     return np.sqrt(m2)        
-
-
-def critical_radius(t, p, sigma=0.95, dim=3):
-    """Radius of critical bubble, in nm.  
-    Ideally will optionally use function to get 
-    surface tension. Uses approximation."""
-    # if isinstance(sigma_fun, float):
-    sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
-    # elif isinstance(sigma_fun, np.ndarray):
-        # sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
-    
-    return (dim-1)*sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
 
 

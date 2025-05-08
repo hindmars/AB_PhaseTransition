@@ -8,6 +8,9 @@ and other important quantities.
 
 @author: hindmars
 """
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Returns the absolute path to your package folder
 
 import numpy as np
 import numpy.polynomial as nppoly
@@ -280,4 +283,15 @@ b_melt_lo = np.array([
 
 Tmelt_poly_PLTS_lo = nppoly.Polynomial(b_melt_lo) # convert to bar
 
+###############################################################################################################
+##########            Tang et al PRL 1991 Magnetic Suppression of the 8 Phase ...               ###############
+###############################################################################################################
+
+data_Tan91_mag_supp_B = np.loadtxt(os.path.join(BASE_DIR, 'Tan+91_table1.csv'), delimiter=',', skiprows=2)
+
+###############################################################################################################
+##########            Greywall PRB 1986 Thermal conductivity              ###############
+###############################################################################################################
+
+data_Gre86_therm_cond = np.loadtxt(os.path.join(BASE_DIR, 'Greywall_1986_TableV_data.csv'), delimiter=',', skiprows=1)
 

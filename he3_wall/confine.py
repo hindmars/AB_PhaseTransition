@@ -10,7 +10,7 @@ Created on Tue Apr 12 15:54:05 2022
 import numpy as np
 import matplotlib.pyplot as plt
 import he3_tools as h
-import he3_wall as hw
+from he3_wall import he3_wall as hw
 
 def plot_confine(A, pot, gr):
     

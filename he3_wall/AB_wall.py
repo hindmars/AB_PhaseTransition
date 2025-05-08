@@ -35,7 +35,15 @@ def get_and_plot_wall(t,p, w):
 Apg_kry, ax = get_and_plot_wall(t, p, L_xi * h.xi(t,p))
 
 #%%
-axwall_eigs = hw.plot_eigs(*Apg_kry)
+# axwall_eigs = hw.plot_eigs(*Apg_kry)
+
+#%% Replot wall
+
+ax2 = hw.plot_wall(*Apg_kry, plot_gap=True, phase_marker=True)
+
+#%%
+
+
 
 #%%
 # sigma_AB = hw.energy(*Apg_kry)[0]*h.xi(0,p)/(abs(Apg_kry[1].mat_pars.f_B_norm())*h.xi(t,p))

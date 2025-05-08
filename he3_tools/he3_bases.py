@@ -44,7 +44,20 @@ O_yz = np.array([[1,0,0],[0,0,1],[0,-1,0]])
 O_xz = np.array([[0,0,1],[0,1,0],[-1,0,0]])
 
 # Dictionary of phases.
-inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "Ay", "Ayy", "Az", "beta", "gamma" ]
+# inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "Ay", "Ayy", "Az", "beta", "gamma" ]
+inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "beta", "gamma" ]
+
+# R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
+#               np.array([1, 1, 1/2, 1/2, 1/2]),
+#               np.array([1, 1, 1,   1,   1]),
+#               np.array([0, 1, 1/3, 1/3, 1/3]),
+#               np.array([0, 1, 1/2, 1/2, 1/2]),
+#               np.array([0, 1, 0,   1,   1]),
+#               np.array([0, 1, 0,   1,   1]),
+#               np.array([0, 1, 0,   1,   1]),
+#               np.array([0, 1, 0,   1,   1]),
+#               np.array([0, 1, 1,   1,   0]),
+#               np.array([0, 1, 0,   1,   0])]
 
 R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
               np.array([1, 1, 1/2, 1/2, 1/2]),
@@ -52,14 +65,11 @@ R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
               np.array([0, 1, 1/3, 1/3, 1/3]),
               np.array([0, 1, 1/2, 1/2, 1/2]),
               np.array([0, 1, 0,   1,   1]),
-              np.array([0, 1, 0,   1,   1]),
-              np.array([0, 1, 0,   1,   1]),
-              np.array([0, 1, 0,   1,   1]),
               np.array([0, 1, 1,   1,   0]),
               np.array([0, 1, 0,   1,   0])]
 
-R_dict = dict(zip(inert_phases, R_arr_list))
 
+R_phase_dict = dict(zip(inert_phases, R_arr_list))
 
 # Need to have a normalised OP class separate from phases
 
@@ -83,4 +93,19 @@ D_dict = { "B"       : id3/np.sqrt(3),
            "B7"      : np.diag([-1, -1, -1])/np.sqrt(3)
            }
 
+
+def phase_mapper(op):
+    
+    if op[0] == 'A':
+        phase = 'A'
+    elif op[0] == 'B':
+        phase = 'B'
+    else:
+        phase = op        
+        
+    return phase
+
+R_dict = {}
+for op in D_dict.keys():
+    R_dict[op] = R_phase_dict[phase_mapper(op)]
 

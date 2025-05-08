@@ -11,6 +11,11 @@ import scipy.special as sp
 import scipy.constants as c
 import numpy as np
 
+ibm_colorblind_list = ['#648fff', '#785ef0', '#dc267f', '#fe6100', '#ffb000', '#000000', '#ffffff']
+alt_colorblind_list = ['#E69F00', '#56B4E9', '#009E73', '#0072B2', '#D55E00', '#CC79A7', '#999999', '#333333']
+wong_colourblind_list = ['#000000', '#E69F00', '#56B4E9', '#009E73', '#F0E442', '#0072B2', '#D55E00', '#CC79A7']
+
+
 cphy = c.physical_constants
 
 # Numerical constants
