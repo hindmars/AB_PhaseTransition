@@ -12,6 +12,7 @@ He3 phase boundary solutions
 # import matplotlib.pyplot as plt
 import he3_tools as h
 # import he3_wall as hw
+from he3_wall import he3_wall as hw
 import he3_bubble as h3b
 
 # def bubble_action(*Apg):
@@ -96,7 +97,8 @@ import he3_bubble as h3b
 p = 5.5
 # p = 32
 # t = 0.7*h.t_AB(p)
-t = 0.63
+# t = 0.63
+t = 1/h.Tc_mK(p)
 
 max_r = h.critical_radius(t, p)/h.xi(0,p)
 Apg_kry, ax = h3b.get_and_plot_bubble(t, p, (500, 2*max_r), plot_gap=True, maxiter=400)
@@ -106,4 +108,5 @@ print(f'Bubble energy/kBT (t = {t:.2f}, p = {p:.2f}): {S_AB:.0f}')
 
 #%%    
 
-h3b.plot_bubble(*Apg_kry, True, loc='lower left')
+# h3b.plot_bubble(*Apg_kry, True, loc='lower left')
+hw.plot_wall(*Apg_kry,phase_marker=True)

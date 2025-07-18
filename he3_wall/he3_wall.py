@@ -978,11 +978,11 @@ def plot_wall(A, pot, gr,
     title_str = title_string.format(t, t*h.Tc_mK(p), p, H, xiGL, sigma) 
     
     if phase_marker:
-        title_str += r'. $L_w/\xi_GL(T) = {:.2f}$'.format(x_R_start - x_L_end)
+        title_str += r'. $L_w/\xi_{{GL}}(T) = {:.2f}$'.format(x_R_start - x_L_end)
     
     if total_energy:
         sigma_tot = np.trapz(eden, gr.x)*h.xi(0,p)/(abs(pot.mat_pars.f_B_norm())*h.xi(t,p))
-        title_str += r'. $\sigma_{{\rm tot}}/\xi_GL(T)|f_B(T)| = {:.2f}$'.format(sigma_tot)
+        title_str += r'. $\sigma_{{\rm tot}}/\xi_{{GL}}(T)|f_B(T)| = {:.2f}$'.format(sigma_tot)
 
     
     ax[0].set_title(title_str, fontsize=10)
