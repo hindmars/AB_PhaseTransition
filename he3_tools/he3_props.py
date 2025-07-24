@@ -1067,4 +1067,29 @@ def mass_B_norm(t, p, JC):
 
     return np.sqrt(m2)        
 
+# Now in he3_magnetic
+
+# def critical_radius(t, p, sigma=0.95, dim=3):
+#     """Radius of critical bubble, in nm.  
+#     Ideally will optionally use function to get 
+#     surface tension. Uses approximation."""
+#     # if isinstance(sigma_fun, float):
+#     sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
+#     # elif isinstance(sigma_fun, np.ndarray):
+#         # sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
+    
+#     return (dim-1)*sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
+
+# def critical_energy_kBTc(t, p, sigma=0.95, dim=3):
+#     """Energy of critical bubble, in units of kBTc.  
+#     Uses thin wall & Ginzburg-Landau approximation.
+#     """
+
+#     Rc = critical_radius(t, p, sigma, dim)
+#     sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
+#     delta_fAB = np.abs(f_A_norm(t, p) - f_B_norm(t, p))
+    
+#     Ec = f_scale(p)*(4*np.pi*sigma_AB*Rc**2 - (4*np.pi/3)*delta_fAB*Rc**3)
+    
+#     return Ec/(h3c.kB*Tc_mK(p)*1e-3)
 
