@@ -7,7 +7,7 @@ Created on Thu Jun  3 15:20:44 2021
 """
 
 """
-Simple routines for finding the critical bubble in He3 potential.
+Simple routines for finding domain walls or critical bubbles in He3 potential.
 
 Uses newton-krylov solver.
 
@@ -26,11 +26,11 @@ import he3_magnetic as  h3b
 
 phase_col_dict = dict(zip(h.inert_phases, h.alt_colorblind_list))
 
-
 # Stiffness parameter for configurations dependinng only on x
 Kxx = np.diag([3,1,1]) 
 
 # Various standard boundary conditions
+# A . x + (1/b) nabla A = 0 
 bc_dir = [np.array([1,1,1]), np.array([0,0,0])]
 bc_neu = [np.array([0,0,0]), np.array([1,1,1])]
 bc_rob = [np.array([1,1,1]), np.array([1,1,1])]
@@ -103,7 +103,7 @@ class material_paramset:
         return xiGL
 
     def xi0(self):
-        """Ginzburg Landau correlation length.
+        """Ginzburg Landau correlation length at zero temperature.
         """
         if self.p is not None:
             xiGL = h.xi(0, self.p)
@@ -113,7 +113,7 @@ class material_paramset:
 
 class quartic_potential:
     """ 
-    Quartic potential class. 
+    Quartic potential class. Wrapper for free energy functions in he3_tools.
 
     """
     
@@ -134,20 +134,14 @@ class quartic_potential:
         # return h.dU_dA(A, self.mat_pars.alpha, self.mat_pars.beta_arr)
         return h.dU_dA(A, *self.args)
         
-    # def plot_line_section(self, X, Y, scale=None, n=500):
-    #     v, A_XD, U_XD = h.line_section(X, Y, self.args, scale, n)
-    #     fig, ax = plt.subplots()
-    #     ax.plot(v, U_XD)
-    #     ax.set_xlabel(r'$\phi/\Delta_{\rm wc}$')
-    #     ax.set_ylabel(r'$U(\phi)$')
-    #     ax.grid()
-    #     return ax
-
     
 class grid_1d:
-    """ 1D grid class. Contains n x values betwen 0 and R, at half dx intervals. 
-    Also values x_minus (shifted grid).  dim is number of space dimensions 
-    in differential equation, not grid dimension. 
+    """ 1D grid class. 
+    Contains n x values betwen 0 and R, at intervals dx, starting at dx/2.
+    Also values x_minus = x - dx (with x[0] = 0)
+
+    dim is number of space dimensions in differential equation.
+
     Thermal activation in d=3: dim = 3
     Quantum tunnelling in d=4: dim = 4
     """
@@ -228,9 +222,11 @@ def find_boundary_condition(bcs, boundary):
     robin = np.logical_not(np.logical_or(dirichlet, neumann))
     return dirichlet, neumann, robin    
 
-# def boundary_condition(A, bcs, boundary, grid):
 def boundary_condition(A, grid, boundary):
-    
+    """
+    Set order parameter A at boundaries, zero Dirichlet only  
+    Other BC handled by phi_shift
+    """
     bcs = grid.bcs
     dirichlet, neumann, robin = find_boundary_condition(bcs, boundary)
 
@@ -243,18 +239,14 @@ def boundary_condition(A, grid, boundary):
 
     if np.any(dirichlet):
         A[boundary, :, dirichlet] = 0
-    
-    # Following should be incorporated into shifted phi, as they involve derivatives?
-    # if np.any(neumann):
-    #     A[boundary, :, neumann] = A[neighbour, :, neumann] 
-    # if np.any(robin):
-    #     a1 = bcs[boundary][0]
-    #     a2 = bcs[boundary][1]
-    #     A[boundary, :, robin] = A[neighbour, :, robin] / (1 - grid.dx * (a1[robin]/a2[robin]))
-    
+        
     return A
 
 def phi_shift(phi, direction, gr):
+    """
+    Shift field along axis for derivatives etc. Takes into account boundary
+    conditions.
+    """
     
     bcs = gr.bcs
         
@@ -299,23 +291,9 @@ def field_eqn_with_bcs(phi, pot, gr):
     GL field equation in 1 radial dimension
     """
 
-    # phi_plus = np.roll(phi,-1, axis=0)
-    # phi_minus = np.roll(phi,+1, axis=0)
-    # phi_plus[-1] = phi[-2]
-    # phi_minus[0] = phi[1]
     phi_plus = phi_shift(phi, +1, gr)
     phi_minus = phi_shift(phi, -1, gr)
-    
-    # phi = boundary_condition(phi, gr, bcleft)
-    # phi = boundary_condition(phi, gr, bcright)
-    # phi_plus = phi_shift(phi, +1, bcs)
-    # phi_minus = phi_shift(phi, -1, bcs)
-    # else:
-    #     phi_plus = np.roll(phi,-1, axis=0)
-    #     phi_minus = np.roll(phi,+1, axis=0)
-    #     phi_plus[-1] = phi[-2]
-    #     phi_minus[0] = phi[1]
-        
+            
     second = (phi_plus + phi_minus - 2*phi)/gr.dx2 
 
     if gr.dim > 1:
@@ -332,7 +310,7 @@ def field_eqn_with_bcs(phi, pot, gr):
 
 def initial_condition(pot, gr, D=None, xscale=1.0):
     """
-    Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub
+    Initial guess for an AB bubble: a kink-antikink pair symmetric around r=0, at +/- r_bub
     """
     
     bub = thin_wall_bubble(pot, dim=gr.dim)
@@ -365,7 +343,7 @@ def initial_condition(pot, gr, D=None, xscale=1.0):
 
 def initial_condition_BB(pot, gr, left_phase="B", right_phase="B1"):
     """
-    Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub
+    Initial guess for a BB wall: a kink-antikink pair symmetric around r=0, at +/- r_bub
     """
     
     bub = thin_wall_bubble(pot, dim=gr.dim)
@@ -392,7 +370,7 @@ def initial_condition_BB(pot, gr, left_phase="B", right_phase="B1"):
 
 def initial_condition_wall(pot, gr, left_phase="A", right_phase="B"):
     """
-    Initial guess: a kink-antikink pair symmetric around r=0, at +/- r_bub,
+    Initial guess for an A: a kink-antikink pair symmetric around r=0, at +/- r_bub,
     """
     
     t = pot.mat_pars.t
@@ -429,7 +407,8 @@ def initial_condition_wall(pot, gr, left_phase="A", right_phase="B"):
     return A_init
 
 def expm_vec(x, T):
-    """ Calculates exp(x * T), where T is a matrix and x an array.
+    """ 
+    Calculates exp(x * T), where T is a matrix and x an array.
     Returns array with shape x.shape + T.shape.
     """
     foo = np.zeros(x.shape + T.shape, dtype=complex)
@@ -439,7 +418,8 @@ def expm_vec(x, T):
 
 
 def apply_texture(A, gr, T_list, fun_list=[expm_vec]*3):
-    """ Applies textture by applying O(3) rotations and phase angle.
+    """ 
+    Applies texture to A by applying O(3) rotations and phase angle.
     T_list[2] should be 1j*h.id3. 
     signature of 3 functions in funlist should be (gr.x, T)
     """
@@ -573,7 +553,8 @@ def krylov_BB(*args, gr_pars=(200,20), dim=1,
                    left_phase="B", right_phase="B1", 
                    bcs = [bc_neu, bc_neu], **kwargs):
     """
-    Apply Krylov solver to find solution in confined boundary conditions.
+    Apply Krylov solver to find BB wall solution interpolating between left B 
+    phase and right B phase.
     
     Returns: order parameter phi, the potential object, and the grid object.
     """
@@ -668,9 +649,9 @@ def relax_from_ic(t_eval, phi_init, pot, gr):
     sol = solve_ivp(field_eqn_vec, tspan, h.mat2vec(phi_init), t_eval=t_eval)
 
     Asol = sol.y
-    print(Asol.shape)
+    # print(Asol.shape)
     Asol = Asol.reshape(gr.n, 3, 3, len(t_eval))
-    print(Asol.shape)
+    # print(Asol.shape)
     Apg_list = []
     for n,t in enumerate(t_eval):
         Apg_list.append((Asol[:,:,:,n], pot, gr))
@@ -678,6 +659,10 @@ def relax_from_ic(t_eval, phi_init, pot, gr):
 
 
 def energy_density(phi, pot, gr):
+    """
+    Calculate energy density from order parameter array phi, with potential pot and 
+    grid gr.
+    """
     phi_plus = np.roll(phi,-1, axis=0)
     phi_plus[-1] = phi[-2]
     
@@ -689,7 +674,8 @@ def energy_density(phi, pot, gr):
     return eden_grad + eden_pot, eden_grad, eden_pot
 
 def surface_energy(A, pot, gr):
-    """Calculates surface energy of configuration, relative to minimum energy density.
+    """
+    Calculates surface energy of configuration, relative to minimum energy density.
     """
     try:
         bcs = gr.bcs
@@ -714,7 +700,10 @@ def surface_energy(A, pot, gr):
     return en/n_surface 
 
 def energy(phi, pot, gr):
-
+    """
+    Calculate total energy of order parameter array phi, in potential pot and grid gr.
+    """
+    
     if gr.dim == 3:
         vol_factor = 4*np.pi
     elif gr.dim == 4:
@@ -736,6 +725,9 @@ def energy(phi, pot, gr):
 
 
 def action(phi, pot, gr):
+    """
+    Calculate action of order parameter array phi, potential pot and grid gr.
+    """
     
     e_tot, e_grad, e_pot = energy(phi, pot, gr)
     
@@ -754,6 +746,10 @@ def action(phi, pot, gr):
 
 
 def plot_eigs(A, pot, gr, angm="orbital"):
+    """
+    Plot eigenvalues of either A-dagger A (orbital) or A A-dagger (spin)
+
+    """
     
     t = pot.mat_pars.t
     p = pot.mat_pars.p
@@ -809,7 +805,8 @@ def plot_eigs(A, pot, gr, angm="orbital"):
 
 
 def thuneberg_formula(t,p):
-    """Formula for AB interface free energy from Thuneberg PRB 1991.
+    """
+    Formula for AB interface free energy from Thuneberg PRB 1991.
     """
     beta1 = h.beta_norm(t,p,1)
     beta2 = h.beta_norm(t,p,2)
@@ -843,7 +840,10 @@ def thuneberg_formula(t,p):
     return square_bracket_20*h.xi(t,p) * h.alpha_norm(t)**2/(4*beta2_0)
 
 def get_wall(t, p, w, N=500, **kwargs):
-    
+    """
+    Wrapper for getting AB wall solution at reduced temperature t, pressure p, 
+    and width of interval w (in GL coherence lengths)
+    """
     L = w/h.xi(0,p)
     # bcs = [bc_neu, bc_neu]
     
