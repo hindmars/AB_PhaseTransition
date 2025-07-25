@@ -9,9 +9,9 @@ Created on Tue Apr 26 18:48:46 2022
 import numpy as np
 # import matplotlib.pyplot as plt
 import he3_tools as h
-import he3_wall as hw
+from he3_wall import he3_wall as hw
 
-import confine as c
+from he3_wall import confine as c
 
 rng = np.random.default_rng()
 

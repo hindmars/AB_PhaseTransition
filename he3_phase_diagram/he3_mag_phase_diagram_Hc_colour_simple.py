@@ -10,19 +10,14 @@ import numpy as np
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 import he3_tools as h
+import he3_magnetic as h3h
 
 h.set_default("DEFAULT_SC_ADJUST", True)
 h.set_default("DEFAULT_T_SCALE", "PLTS")
 
 #%%
 
-# marker_data_IC_constP  = {"marker":'<', "s":40, "c":"#0000FF", "alpha":1.0, "edgecolors":'b', "linewidth":1, "label":"IC"}
-# marker_data_HEC_constP = {"marker":'<', "s":25, "c":"#FF80FF", "alpha":1.0, "edgecolors":'k', "linewidth":1, "label":"HEC"}
-
-# marker_data_IC_varyP  = {"marker":'x', "s":40, "c":"#0000FF", "alpha":1.0, "edgecolors":'b', "linewidth":1, "label":"IC"}
-# marker_data_HEC_varyP = {"marker":'s', "s":40, "c":"#FF80FF", "alpha":1.0, "edgecolors":'k', "linewidth":1, "label":"HEC"}
-
-savefig = False
+savefig = True
 
 fill_col_norm = '#B1DFE4'
 fill_col_A = '#F5EC20'
@@ -30,7 +25,7 @@ fill_col_B = '#CCE3A7'
 fill_col_B_super_constP = '#F9F5A9'
 fill_col_B_super_varyP = '#CCE3A7'
 
-p_a = (0,40)
+p_a = (0, 40)
 T_a = (0, 2.5)
 
 T_smooth = np.linspace(np.min(T_a), np.max(T_a), 200)
@@ -43,11 +38,25 @@ p_melt_line = h.p_melt(T_smooth)
 
 # p_coarse = p_smooth[::10]
 
+Hc_arr = np.zeros((len(T_smooth), len(p_smooth)))
 
-
+for m, T in enumerate(T_smooth):
+    t_arr = T/Tc_line
+    for n,p in enumerate(p_smooth):
+        t = t_arr[n]
+        if p < h.p_melt(t*h.Tc_mK(p)):
+            Hc_arr[m, n] = h3h.Hc_T(t, p)
+        else:
+            Hc_arr[m, n] = np.nan
+        # print(t_arr[n], HAB_arr[m,n])
+    
 #%%
 fig, ax = plt.subplots(figsize=(4,3))
 
+cs = ax.contour(T_smooth, p_smooth, Hc_arr.T, 10, colors='k', linestyles='--')
+ax.clabel(cs, inline=True, fontsize=10)
+
+#%%
 p_smooth_sf = p_smooth[p_smooth < h.p_A_bar]
 Tc_line_sf = Tc_line[p_smooth < h.p_A_bar]
 TAB_line_sf = TAB_line[p_smooth < h.p_A_bar]
@@ -63,7 +72,7 @@ ax.plot(T_smooth, p_melt_line, 'k-.', label=r'$T_{\rm melt}$')
 
 
 #%%
-# Fillss
+# Fills
 p_upper = p_a[1]
 
 #B phase
@@ -103,9 +112,10 @@ ax.annotate("A",(2.15,29), fontsize="larger")
 ax.annotate("Normal",(1.75,4), fontsize="larger")
 ax.annotate("Solid",(1.0,36), fontsize="larger")
 
-ax.set_title(r'$^3$He bulk phase diagram, $B=0$')
+# fig.suptitle(r'$^3$He bulk phase diagram')
+ax.set_title(r'$H$/T for B to planar transition (GL theory)')
 
 fig.tight_layout()
 
 if savefig:
-    fig.savefig("he3_phase_diagram_simple.pdf")
+    fig.savefig("he3_mag_phase_diagram_Hc_simple.pdf")

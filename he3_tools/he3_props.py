@@ -16,31 +16,6 @@ import he3_constants as h3c
 import he3_data as h3d
 # import he3_matrix as h3m
 
-# import scipy.special as sp
-# import scipy.constants as c
-
-# cphy = c.physical_constants
-
-# # Numerical constants
-# zeta3 = sp.zeta(3)
-# beta_const = 7 * zeta3/(80 * np.pi**2)
-# xiGL_const = np.sqrt(7 * zeta3 / 20)
-
-# # Physical constants
-# # Helium 3 mass in u
-# mhe3_u = 3.0160293 
-# mhe3_kg = mhe3_u * cphy["atomic mass constant"][0]
-# kB = c.k
-# R = c.R
-# N_A = c.N_A
-# hbar = c.hbar
-
-# a_bcs = 3.235 # Exponent for fit to BCS gap
-# delta_bcs0 = np.pi * np.exp(-np.euler_gamma)
-
-# beta_norm_wc_list = [-1, 2, 2, 2, -2]
-
-
 SET_T_SCALE= {"Greywall", "PLTS"}
 # DEFAULT_T_SCALE="Greywall" 
 DEFAULT_T_SCALE="PLTS" 
@@ -66,11 +41,21 @@ sc_corr_adj_pol = nppoly.Polynomial([0])
 SET_ALPHA_TYPE = {"GL", "BCS"}
 DEFAULT_ALPHA_TYPE = "GL"
 
+def get_setting(name):
+    """Gets value of a globally defined variable.
+    """
+    return globals()[name]
+
 def report_setting(name):
+    """Reports value of a globally defined variable.
+    """
     xval = globals()[name]
     print("he3_tools:", type(xval), "variable " + name + " set to", xval)
+    return
 
 def set_default(name, xval):
+    """Sets value of a globally defined variable.
+    """
     set_name = name.replace("DEFAULT_", "SET_")
     if xval in globals()[set_name]:
         globals()[name] = xval
@@ -79,7 +64,7 @@ def set_default(name, xval):
     report_setting(name)
     return 
 
-def beta_norm_wc(n):
+def b_wc(n):
     """
     Parameters
     ----------
@@ -94,311 +79,24 @@ def beta_norm_wc(n):
     """
     b = np.nan
     if n in [1,2,3,4,5]:
-        b = h3c.beta_norm_wc_list[n-1]
+        b = h3c.b_wc_list[n-1]
     else:
-        raise ValueError("beta_norm_wc: n should be 1, 2, 3, 4 , or 5")
+        raise ValueError("b_wc: n should be 1, 2, 3, 4 , or 5")
     return b
 
-# def convert_b_to_db(b_list, n):
-#     db_list = []
-#     for b in b_list:
-#         db_list.append(b - beta_norm_wc(n))
-#     return db_list
+def b_wc_array():
+    """
+    Parameters
+    ----------
 
-# # Construct dictionaries of model strong coupling corrections.
-# # From Regan, Wiman, Sauls arXiv:1908.04190 Table 1
+    Returns
+    -------
+    b : float (or python default, usually is double)
+        Normalised b as (5,) shape array, for weak coupling app.
 
-# def get_interp_data_rws19():
-#     p_nodes_beta = range(0, 36, 2)
-    
-#     c1 = [-0.0098, -0.0127, -0.0155, -0.0181, -0.0207, -0.0231, -0.0254, -0.0275,
-#           -0.0295, -0.0314, -0.0330, -0.0345, -0.0358, -0.0370, -0.0381, -0.0391, 
-#           -0.0402, -0.0413]
-    
-#     c2 = [-0.0419, -0.0490, -0.0562, -0.0636, -0.0711, -0.0786, -0.0861, -0.0936, 
-#           -0.1011, -0.1086, -0.1160, -0.1233, -0.1306, -0.1378, -0.1448, -0.1517, 
-#           -0.1583, -0.1645]
-    
-#     c3 = [-0.0132, -0.0161, -0.0184, -0.0202, -0.0216, -0.0226, -0.0233, -0.0239, 
-#           -0.0243, -0.0247, -0.0249, -0.0252, -0.0255, -0.0258, -0.0262, -0.0265, 
-#           -0.0267, -0.0268]
-    
-#     c4 = [-0.0047, -0.0276, -0.0514, -0.0760, -0.1010, -0.1260, -0.1508, -0.1751, 
-#           -0.1985, -0.2208, -0.2419, -0.2614, -0.2795, -0.2961, -0.3114, -0.3255, 
-#           -0.3388, -0.3518]
-    
-#     c5 = [-0.0899, -0.1277, -0.1602, -0.1880, -0.2119, -0.2324, -0.2503, -0.2660, 
-#           -0.2801, -0.2930, -0.3051, -0.3167, -0.3280, -0.3392, -0.3502, -0.3611, 
-#           -0.3717, -0.3815]
-
-#     c_list = [c1, c2, c3, c4, c5]
-
-#     return [p_nodes_beta, c_list]
-
-# def get_interp_data_wiman_thesis():
-#     """From Figure 8, grabbed using Web Plot Digitiser.
-#     """
-    
-#     p_nodes = [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 
-#                22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0]
-#     c1 = [-0.004830918, -0.008756039, -0.009057971, -0.011171498, -0.013586957, 
-#           -0.016304348, -0.01781401, -0.019021739, -0.021437198, -0.023852657, 
-#           -0.025664251, -0.027475845, -0.028683575, -0.030495169, -0.031702899, 
-#           -0.033514493, -0.032689211, -0.033977456]
-#     c2 = [-0.025362319, -0.039855072, -0.054951691, -0.068236715, -0.080012077, 
-#           -0.090881643, -0.101751208, -0.111714976, -0.120471014, -0.128623188, 
-#           -0.136775362, -0.144625604, -0.151268116, -0.157306763, -0.162741546, 
-#           -0.168176329, -0.173007246, -0.177536232]
-#     c3 = [-0.014492754, -0.020833333, -0.023852657, -0.026871981, -0.02928744, 
-#           -0.032306763, -0.035929952, -0.03955314, -0.041364734, -0.041364734, 
-#           -0.040458937, -0.041364734, -0.041666667, -0.041968599, -0.041968599, 
-#           -0.042572464, -0.041968599, -0.041062802]
-#     c4 = [-0.026570048, -0.036533816, -0.044987923, -0.054649758, -0.065519324, 
-#           -0.077294686, -0.089070048, -0.102355072, -0.115640097, -0.127717391, 
-#           -0.139794686, -0.155495169, -0.172101449, -0.189915459, -0.210144928, 
-#           -0.233091787, -0.257850242, -0.282608696]
-#     c5 = [-0.079710145, -0.129307568, -0.174214976, -0.213768116, -0.248792271, 
-#           -0.282608696, -0.310386473, -0.33544686, -0.358997585, -0.380434783, 
-#           -0.400664251, -0.415157005, -0.4272343, -0.4375, -0.443538647, 
-#           -0.446557971, -0.444746377, -0.443236715]
-
-#     c_list = [c1, c2, c3, c4, c5]
-
-#     return [p_nodes, c_list]
-
-# def get_interp_data_choi():
-#     p_choi = range(0, 35, 1)
-#     b1_choi = [-0.97, -0.97, -0.97, -0.98, -0.98, -0.98, -0.98, -0.98, -0.98, -0.99, -0.99, -0.99, -0.99, -0.99,
-#                -1.00, -1.00, -1.00, -1.00, -1.00, -1.00, -1.01, -1.01, -1.01, -1.01, -1.01, -1.01, -1.02, -1.02,
-#                -1.02,  -1.02, -1.02, -1.03, -1.03, -1.03, -1.03]
-#     b2_choi = [1.89, 1.94, 1.96, 1.99, 1.99, 1.99, 1.99, 1.98, 1.98, 1.98, 1.97, 1.97, 1.96, 1.95, 1.95, 1.95, 1.95,
-#                1.94,1.94, 1.93, 1.94, 1.94, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93, 1.93,
-#                1.93]
-#     b3_choi = [2.10, 1.96, 1.86, 1.81, 1.76, 1.74, 1.72, 1.70, 1.70, 1.69, 1.69, 1.70, 1.69, 1.69, 1.70, 1.72, 1.73, 1.72,
-#                1.73, 1.72, 1.74, 1.74, 1.74, 1.74, 1.74, 1.74, 1.73, 1.74, 1.73, 1.73, 1.72, 1.73, 1.73, 1.73,
-#                1.73]
-#     b4_choi = [1.85, 1.72, 1.63, 1.56, 1.52, 1.48, 1.46, 1.44, 1.42, 1.41, 1.40, 1.39, 1.39, 1.39, 1.38, 1.35, 1.34,
-#                1.33,1.32, 1.33, 1.31, 1.29, 1.29, 1.29, 1.28, 1.28, 1.27, 1.26, 1.26, 1.26, 1.26, 1.25, 1.25, 1.25,
-#                1.25]
-#     b5_choi = [-1.84, -1.82, -1.81, -1.81, -1.81, -1.81, -1.82, -1.82, -1.83, -1.84, -1.85, -1.86, -1.87, -1.88, -1.89, -1.89, -1.90,
-#                -1.90, -1.91, -1.92, -1.93, -1.93, -1.94, -1.95, -1.96, -1.97, -1.97, -1.98, -1.99, -2.00, -2.01, -2.02, -2.02, -2.03,
-#                -2.03]
-    
-#     c1 = convert_b_to_db(b1_choi, 1)
-#     c2 = convert_b_to_db(b2_choi, 2)
-#     c3 = convert_b_to_db(b3_choi, 3)
-#     c4 = convert_b_to_db(b4_choi, 4)
-#     c5 = convert_b_to_db(b5_choi, 5)
-    
-#     c_choi_list = [c1, c2, c3, c4, c5]
-
-#     return [p_choi, c_choi_list]
-
-# def get_poly_ws15():
-#     # polynomial coefficients from J. J. Wiman ‚ J. A. Sauls prb 92, 144515 (2015)
-#     # \Delta{\beta_i^{sc}}/|beta_1^{wc}| = a_n^{i} p^{n}, p in bar
-#     a1sc = [3.070e-2, -2.081e-3, 2.133e-5, -4.189e-7]
-#     a2sc = [-1.074e-1, 5.412e-2, -1.081e-2, 1.025e-3, -5.526e-5, 1.722e-6, -2.876e-8, 1.991e-10]
-#     a3sc = [1.038e-1, -1.752e-1, 3.488e-2, -4.243e-3, 3.316e-4, -1.623e-5, 4.755e-7, -7.587e-9, 5.063e-11]
-#     a4sc = [-1.593e-1, -1.350e-1, 1.815e-2, -1.339e-3, 5.316e-5, -1.073e-6, 8.636e-9]
-#     a5sc = [1.610e-1, 2.263e-2, -4.921e-3, 3.810e-4, -1.529e-5, 3.071e-7, -2.438e-9]
-#     return [nppoly.Polynomial(a1sc), nppoly.Polynomial(a2sc), nppoly.Polynomial(a3sc), 
-#             nppoly.Polynomial(a4sc), nppoly.Polynomial(a5sc)]
-
-# def get_poly_choi_this():
-#     # Polynomial fits to Choi et al data, same orders as Wiman-Sauls 2015
-#     beta_Choi_data = get_interp_data_choi()
-
-#     p_choi = beta_Choi_data[0]
-#     beta_choi = beta_Choi_data[1]
-
-#     my_poly_list = []
-#     my_poly_order_list = [3, 8, 9, 7, 7]
-
-#     for n, (beta, my_poly_order) in enumerate(zip(beta_choi, my_poly_order_list)):
-#         my_poly_list.append(nppoly.Polynomial.fit(p_choi, beta_choi[n], my_poly_order))
-
-#     return my_poly_list
-
-# def get_poly_rws19_this():
-#     """Polynomial fits to Regan-Wiman-Sauls 2019 quoted Wiman beta data, same orders 
-#     as they give, but fitted directly."""
-#     beta_rws19_data = get_interp_data_rws19()
-
-#     p_rws19 = beta_rws19_data[0]
-#     beta_rws19 = beta_rws19_data[1]
-
-#     my_poly_list = []
-#     my_poly_order_list = [5, 5, 5, 5, 5]
-
-#     for n, (beta, my_poly_order) in enumerate(zip(beta_rws19, my_poly_order_list)):
-#         my_poly_list.append(nppoly.Polynomial.fit(p_rws19, beta_rws19[n], my_poly_order))
-
-#     return my_poly_list
-
-
-# dbeta_data_dict = { "RWS19" : get_interp_data_rws19(),
-#                    "RWS19-interp" : get_interp_data_rws19(),
-#                    "RWS19-poly" : get_poly_rws19_this(),
-#                 "Wiman-thesis" : get_interp_data_wiman_thesis(),
-#                 "Choi-interp" : get_interp_data_choi(),
-#                 "Choi-poly" : get_poly_choi_this(),
-#                 "WS15" : get_poly_ws15(),
-#                 "WS15-poly" : get_poly_ws15()
-#                 }
-
-# ######################################################################################
-# ### Interpolation data for other material parameters, from Greywall 1986 via RWS19 ###
-# ######################################################################################
-# ##'''
-# #
-# p_nodes = list(range(0, 36, 2))
-
-# Tc_data_mK = [0.929, 1.181, 1.388, 1.560, 1.705, 1.828, 1.934, 2.026, 2.106, 2.177, 
-#       2.239, 2.293, 2.339, 2.378, 2.411, 2.438, 2.463, 2.486]
-
-# # particle_density, nm^{-3}
-# np_data = [16.28, 17.41, 18.21, 18.85, 19.34, 19.75, 20.16, 20.60, 21.01, 21.44, 21.79, 
-#        22.96, 22.36, 22.54, 22.71, 22.90, 23.22, 23.87]
-
-# # Effective mass ratio
-# mstar_m_data = [2.80, 3.05, 3.27, 3.48, 3.68, 3.86, 4.03, 4.20, 4.37, 4.53, 4.70, 4.86, 
-#            5.02, 5.18, 5.34, 5.50, 5.66, 5.8]
-
-# # Fermi velocity, m/s
-# vf_data = [59.03, 55.41, 52.36, 49.77, 47.56, 45.66, 44.00, 42.51, 41.17, 39.92, 38.74, 
-#       37.61, 36.53, 35.50, 34.53, 33.63, 32.85, 32.23]
-
-# # Coherence length at T=0, nm
-# xi0_data = [77.21, 57.04, 45.85, 38.77, 33.91, 30.37, 27.66, 25.51, 23.76, 22.29, 21.03, 
-#        19.94, 18.99, 18.15, 17.41, 16.77, 16.22, 15.76]
-
-# # Landau parameter $F_0^a$
-# F0a_data = [-0.7226, -0.7317, -0.7392, -0.7453, -0.7503, -0.7544, -0.7580, -0.7610, 
-#             -0.7637, -0.7661, -0.7684, -0.7705, -0.7725, -0.7743, -0.7758, -0.7769, 
-#             -0.7775, -0.7775]
-# F0a_poly = nppoly.Polynomial.fit(p_nodes, F0a_data, 5)
-
-# # For polynomial fit method Tc
-# # From Regan, Wiman, Sauls arXiv:1908.04190 Table 2
-# # Doesn't work at the moment, some unit miunserstanding or misprint?
-# # a1 = [-9.849e-3, -5.043e-2, 2.205e-2, -2.557e-2, 5.023e-2 -2.769e-2]
-# # a_list = [a1[::-1]] # polyfit wants highest power first
-# # b1_poly = np.polynomial.Polynomial(a1)
-
-# ###############################################################################################################
-# ##########            Greywall, PLTS temperature scales polynomial coefficients                 ###############
-# ###############################################################################################################
-
-
-# # From Greywall 1986
-# T_pcp_mK = 2.273
-# p_pcp_bar = 21.22
-# p_A_bar = 34.338
-# # Greywall 1986 Tc polynomial fit cofficients and constructor
-# aTc_G = [0.92938375, 0.13867188, -0.69302185e-2, 0.25685169e-3, -0.57248644e-5, 0.5301091e-7]
-# Tc_poly_Greywall = nppoly.Polynomial(aTc_G)
-# # Greywall 1986 TAB polynomial fit cofficients and constructor
-# aTAB_G = [T_pcp_mK, -0.10322623e-1, -0.53633181e-2, 0.83437032e-3, -0.61709783e-4,  0.17038992e-5]
-# TAB_poly_Greywall = nppoly.Polynomial(aTAB_G)
-
-# # Melting curve poly coeffs (Greywall) 0.9 - 5.6 mK
-# aPmelt = [-0.19632970e-1, 0.61880268e-1, -0.781103055e-1, 0.13050600, -0.43519381e-1, 
-#           0.13752791e-6, -0.17180436e-6, -0.220939060e-9, -0.85450245e-12] 
-# Pmelt_poly_Greywall = nppoly.Polynomial(aPmelt)
-
-# # Greywall scale to PLTS scale, 6 order polynomial coefficients (Parpia et al 2022)
-# GtoPLTS6 = [-0.14265343150487, 1.2810635032153, -0.22689947807354, 0.084337673002034, 
-#             -0.016928990685839, 0.0017611612884063, -7.4461876859237e-5]
-# GtoPLTS6_low_poly = np.polynomial.Polynomial(GtoPLTS6)
-
-# # Greywall scale to PLTS scale, 9 order polynomial coefficients (Parpia et al 2022)
-# GtoPLTS9 = [0.020353327019475, 0.96670033496024, 0.0019559314169033, -9.5551084662924e-5, 
-#             3.2167457655106e-6, -7.0097586342143e-8, 9.6909878738352e-10,
-#             -8.2126513949290e-12, 3.8886762300964e-14, -7.8713540127550e-17]
-# GtoPLTS9_high_poly = np.polynomial.Polynomial(GtoPLTS9)
-
-
-# # PLTS scale coefficients for polynomial method for Tc and T_AB, from Parpia et al 2022
-# d_c = np.array([0.90972399274531, 0.14037182852625, -0.0074017331747577, 2.8617547367067e-4,-6.5064429600510e-6, 6.0754459040296e-8])
-# c_AB = np.array([-26.864685876026, 5.2647866128370, -0.37617826876151, 0.013325635880953, -2.3510107585468e-4, 1.6519539175010e-6])
-
-# Tc_poly_PLTS = nppoly.Polynomial(d_c)
-# TAB_poly_PLTS = nppoly.Polynomial(c_AB)
-
-# # Melting curve coefficients, PLTS, 0.9 - 5.6 mK, p in millibar
-# b_melt = np.array([2.4492188707375, -0.026522783946809, -2.7665556176967e-5, -2.2800036357249e-7, 
-#        3.9890194953355e-10, 1.2845930171276e-11, -6.9521369379387e-13, -1.5658128429388e-14, 
-#        -1.1687750824147e-16, -3.0199721850282e-19] )
-# Tmelt_poly_PLTS = nppoly.Polynomial(b_melt/1e3) # convert to bar
-
-# ###############################################################################################################
-# ##########            Order parameter useful basuis vectors, matrices and operations            ###############
-# ###############################################################################################################
-# # Basis vectors
-
-# e = []
-# e.append(np.array([0, 0, 1]))
-# e.append(np.array([1, 1j, 0])/np.sqrt(2))
-# e.append(np.array([1, -1j, 0])/np.sqrt(2))
-
-# # Some basis matrices
-# z3 = np.zeros((3,3))
-# id3 = np.identity(3)
-# D_A = np.outer(e[0], e[1])
-# D_B = id3/np.sqrt(3)
-# D_planar = (id3 - np.outer(e[0], e[0]))/np.sqrt(2)
-# D_polar = np.outer(e[0], e[0])
-
-# # Lowest barrier from A phase by exhaustive search
-# D_low = np.array([[-0.16903589-0.2054976j,  -0.24395354-0.43379841j,  0.0228508 -0.06064158j],
-#  [-0.03924275-0.003804j,    0.05325473-0.02309472j,  0.6362785 -0.39972627j],
-#  [ 0.07959769-0.05774015j,  0.24372012-0.19001106j,  0.04900674-0.0131628j ]])
-
-# # Antihermitian generators
-# T_xy = np.array([[0,1,0],[-1,0,0],[0,0,0]])
-# T_yz = np.array([[0,0,0],[0,0,1],[0,-1,0]])
-# T_xz = np.array([[0,0,1],[0,0,0],[-1,0,0]])
-# # pi/2 rotations
-# O_xy = np.array([[0,1,0],[-1,0,0],[0,0,1]])
-# O_yz = np.array([[1,0,0],[0,0,1],[0,-1,0]])
-# O_xz = np.array([[0,0,1],[0,1,0],[-1,0,0]])
-
-# # Dictionary of phases.
-# inert_phases = ["B", "planar", "polar", "alpha", "bipolar", "A", "Ay", "Ayy", "Az", "beta", "gamma" ]
-
-# R_arr_list = [np.array([1, 1, 1/3, 1/3, 1/3]),
-#               np.array([1, 1, 1/2, 1/2, 1/2]),
-#               np.array([1, 1, 1,   1,   1]),
-#               np.array([0, 1, 1/3, 1/3, 1/3]),
-#               np.array([0, 1, 1/2, 1/2, 1/2]),
-#               np.array([0, 1, 0,   1,   1]),
-#               np.array([0, 1, 0,   1,   1]),
-#               np.array([0, 1, 0,   1,   1]),
-#               np.array([0, 1, 0,   1,   1]),
-#               np.array([0, 1, 1,   1,   0]),
-#               np.array([0, 1, 0,   1,   0])]
-
-# R_dict = dict(zip(inert_phases, R_arr_list))
-
-
-# # Need to have a normalised OP class separate from phases
-
-# D_dict = { "B"       : id3/np.sqrt(3),
-#            "planar"  : (id3 - np.outer(e[0], e[0]))/np.sqrt(2),
-#            "polar"   : np.matmul(np.matmul(O_xz, D_polar), np.transpose(O_xz) ), 
-#            "alpha"   : np.diag(np.array([1, np.exp(1j*np.pi/3), np.exp(2j*np.pi/3)])/np.sqrt(3)),
-#            "bipolar" : np.diag(np.array([1, 1j, 0])/np.sqrt(2)),
-#            "A"       : np.matmul(O_xz, D_A),
-#            "Ay"      : -1j*np.matmul(O_yz,np.matmul(D_A, O_xz)), #-1j*np.matmul(O_yz, D_A),
-#            "Ayy"     : np.matmul(np.matmul(O_yz,D_A), O_yz), #-1j*np.matmul(O_yz, D_A),
-#            "Az"      : D_A,
-#            "beta"    : np.matmul(np.outer(e[1], e[0]), O_xz), 
-#            "gamma"   : np.outer(e[1], e[1])
-#            }
-
-
-
+    """
+    b = h3c.b_wc_list
+    return np.array(b)
 
 # Experimental data functions
 def Tc_mK_expt(p):
@@ -427,7 +125,7 @@ def Tc_mK(p):
 
 
 def T_mK(t, p):
-    """Converts reduced temperature to temperature in mK.
+    """Converts reduced temperature ($T/T_c$) to temperature in mK.
     """
     return t * Tc_mK_expt(p)
 
@@ -458,39 +156,105 @@ def tAB_expt(p):
     return TAB_mK_expt(p)/Tc_mK_expt(p)
 
 def p_melt(T_mK):
-    # Melting pressure - needs updating.
-    return h3d.p_A_bar * np.ones_like(T_mK)
+    """
+    Melting pressure , Greywall 1986 (equation A1). T in mK, p in bar.
+    Uses Tian, Smith, Parpia 2022 PLTS to Greywall temperature converter.
+    """
+    if isinstance(T_mK, float) or isinstance(T_mK, int):
+        T = T_mK
+    else:
+        T = T_mK.copy()
+    if DEFAULT_T_SCALE == "PLTS":
+        T = T_PLTStoG(T_mK)
+    # return h3d.p_A_bar * np.ones_like(T_mK)
+    # Greywall data down to 0.9mK onlyq
+    T = np.maximum(T, 0.9)
+    return h3d.Pmelt_poly_Greywall(T)/T**3 + h3d.p_A_bar
 
 def T_melt_PLTS(p):
-    return h3d.Tmelt_poly_PLTS(p)
+    """Returns melting temperataure (PLTS) as a function of pressure. 
+    Uses Tian, Smith, Parpia NIMS 2022 interpolation polunomials.
+    """
+    if isinstance(p, float) or isinstance(p, int):
+        pa = np.array([p])
+    else:
+        pa = p
+        
+    dp_mbar = (pa - h3d.p_A_bar)*1e3 
 
-# Temperature scale convertor, Greywall to PLTS, ninth order polynomial 
+    T_melt_mK = np.ones_like(pa)*np.nan
+    T_melt_mK[pa > 29.3] = h3d.Tmelt_poly_PLTS_hi(dp_mbar[pa > 29.3])
+    T_melt_mK[pa > 35.2] = h3d.Tmelt_poly_PLTS_lo(dp_mbar[pa > 35.2])
+    
+    if isinstance(p, float) or isinstance(p, int):
+        T_melt_mK = T_melt_mK[0]
+    
+    return T_melt_mK
+
 def T_GtoPLTS(TG):  
-    # return np.poly1d(np.flip(GtoPLTS9_high_poly.coef))(TG)
-    return nppoly.Polynomial(h3d.GtoPLTS9_high_poly.coef)(TG)
+    """Temperature scale convertor, Greywall to PLTS, ninth order polynomial.
+    Between 0.9 mK and 100 mK, uses Tian, Smith, Parpia NIMS 2022 interpolation 
+    polynomials. For T > 100 mK, assumes linear realtio consistent with TSP value 
+    at 100 mK.    
+    """
+    if isinstance(TG, float) or isinstance(TG, int):
+        TGa = np.array([TG])
+    else:
+        TGa = TG
+        
+
+    T_PLTS_mK = np.ones_like(TGa)*np.nan
+    T_PLTS_mK[TGa <= 5.6] = h3d.GtoPLTS_low_poly(TGa[TGa <= 5.6])
+    T_PLTS_mK[TGa > 5.6] = h3d.GtoPLTS_high_poly(TGa[TGa > 5.6])
+    T_PLTS_mK[TGa > 100] = TGa[TGa > 100] - 100.0 + h3d.GtoPLTS_high_poly(100)
+    
+    if isinstance(TG, float) or isinstance(TG, int):
+        T_PLTS_mK = T_PLTS_mK[0]
+
+    return T_PLTS_mK
+
+def T_PLTStoG(TPLTS):
+    """Temperature scale converter, invert Greywall to PLTS, ninth order polynomial 
+    Works between 0.9 mK and 100 mK.
+    Uses Tian, Smith, Parpia NIMS 2022 interpolation polunomials.        
+    """
+    return h3d.PLTStoG9_high_poly(TPLTS)
 
 def npart(p):
-    """Particle density at pressure p.
+    """Particle density at pressure p bar ($nm^{-3}$).
     """
     # return np.interp(p, p_nodes, np_data)
     return np.interp(p, h3d.p_nodes, h3d.np_data)
 
 def mstar_m(p):
-    """Effective mass ratio at pressure p.
+    """Effective mass ratio at pressure p bar.
     """
-    # return np.interp(p, p_nodes, mstar_m_data)
     return np.interp(p, h3d.p_nodes, h3d.mstar_m_data)
 
 def vf(p):
-    """Fermi velocity at pressure p.
+    """Fermi velocity at pressure p bar (m/s).
     """
-    # return np.interp(p, p_nodes, vf_data)
     return np.interp(p, h3d.p_nodes, h3d.vf_data)
 
-def xi0(p):
-    """Zero T Cooper pair correlation length at pressure p (nm).
+def pf(p):
+    """Fermi momentum at pressure p bar (SI units, kg m/s)
     """
-    # return np.interp(p, p_nodes, xi0_data)
+    return h3c.mhe3_kg * mstar_m(p) * vf(p)
+
+def muf(p, units='SI'):
+    """Chemical potential at pressure p bar (Fermi energy at zero temperature).
+    units = 'SI' (default) SI units (J)
+    units = 'eV' (electron-volts)
+    
+    """
+    ef = 0.5*h3c.mhe3_kg * mstar_m(p) * vf(p)**2
+    if units == 'eV':
+        ef /= h3c.c.e
+    return ef
+
+def xi0(p):
+    """Zero T Cooper pair correlation length at pressure p bar (nm).
+    """
     return np.interp(p, h3d.p_nodes, h3d.xi0_data)
 
 def F0a(p):
@@ -498,30 +262,235 @@ def F0a(p):
     return h3d.F0a_poly(p)
 
 def xi(t, p):
-    """Ginzburg Landau correlation length at pressure p.
+    """Ginzburg Landau correlation length at pressure p bar (nm).
     """
     return h3c.xiGL_const*xi0(p)/(-alpha_norm(t))**0.5
 
 def xi_delta(t, p):
-    """BCS correlation length at pressure p.
+    """BCS correlation length at pressure p bar (nm).
     """
     return h3c.xiGL_const*xi0(p)/(-alpha_bcs(t))**0.5
     
-
 def N0(p):
-    """Density of states at Fermi surface, units nm^{-3} J^{-1}.
+    """Density of states at Fermi surface, units nm$^{-3}$ J$^{-1}$.
     """
     return npart(p) * 1.5 / (h3c.mhe3_kg * mstar_m(p) * vf(p)**2)
+
+def Gi(p):
+    """Ginzrurg number at pressure p.
+    
+    Gi = N(0) * xi0(p)**3 * kB * T_c(p)
+    
+    N(0) - density of states at Fermi surface
+    xi0  - Cooper pair correlation length
+    T_c  - normal/superfluid critical temperature
+    
+    """
+    
+    return N0(p) * xi0(p)**3 * h3c.kB * Tc_mK(p)*1e-3
+
+def tGL(p):
+    r"""
+    Ginzburg-Landau time, defined as 
+    $$
+    t_{\rm GL} = \xi_{\rm GL}(p)/ v_F(p)
+    $$
+    where $\xi_{\rm GL}$ is the zero-temperature coherence length and $v_F$ is 
+    the Fermi velocity.
+    
+    Parameters
+    ----------
+    p : float, int or numpy.ndarray
+        Pressure in bar.
+
+    Returns
+    -------
+    float, int or numpy.ndarray
+        GL time.
+
+    """
+    return xi(0, p)/vf(p)
+
+def tauN0(t, p):
+    """
+    Mean free timescale of quasiparticles (a.k.a. quasiparticle lifetime).
+    Uses simple approximation for $\tau_N^0$ gicen in Vollhardt and Woelfle, p36,
+    crediting Wheatley 1978. DEPRECATED in favour of tau_qp
+
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle lifetime in seconds.
+
+    """
+    
+    return 0.3e-6 /T_mK(t, p)**2 
+
+def tau_qp(t, p):
+    """
+    Mean free scattering time of quasiparticles (a.k.a. quasiparticle lifetime).
+    Uses Greywall 1984 data, and enforces Greywall temparature.
+
+    Units: s
+    
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle lifetime in seconds.
+
+    """
+    p_data = h3d.data_Gre86_therm_cond[:,0]
+    tauT2_data = h3d.data_Gre86_therm_cond[:,5]
+    
+    # Greywall is in sec/K^2, same as musec/mK^2
+    tauT2_interp = np.interp(p, p_data, tauT2_data)
+    print(p, tauT2_interp)
+    
+    if get_setting('DEFAULT_T_SCALE') != 'Greywall':
+        tmp_set = get_setting('DEFAULT_T_SCALE')
+        set_default('DEFAULT_T_SCALE', 'Greywall')
+        T = T_mK(t, p)
+        set_default('DEFAULT_T_SCALE', tmp_set)
+    else:
+        T = T_mK(t, p)
+    print(p, tauT2_interp, T)
+    
+    return tauT2_interp /T**2 * 1e-6
+
+def mfp0(t, p):
+    """
+    Mean free path of quasiparticles.
+    Uses simple approximation for $\tau_N^0$ gicen in Vollhardt and Woelfle, p36,
+    crediting Wheatley 1978.
+
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle mean free path in nm.
+
+    """
+    
+    return vf(p)*tauN0(t, p)*1e9
+
+def mfp_qp(t, p):
+    """
+    Mean free path of quasiparticles.  Uses Greywall data for $\tau_qp$. 
+    
+    Units: nm
+
+    Parameters
+    ----------
+    t : float, np.ndarray
+        Reduced temperature.
+    p : float, np.ndarray
+        Pressure in bar.
+    
+    Only one of t, p is allowed to be an array.
+
+    Returns
+    -------
+    float, nd.array
+        Quasiparticle mean free path in nm.
+
+    """
+    
+    return vf(p)*tau_qp(t, p)*1e9
+
+def gH(p):
+    """
+    Material parameter for Zeeman energy, quadratic in magnetic field H, in 
+    dimensionless units, where order parameter is scaled with $k_BT_c$, and 
+    magnetic field is measured in tesla.
+
+    Parameters
+    ----------
+    p : float, array-like
+        Pressure in bar.
+
+    Returns
+    -------
+    Value of $g_H$, evaluated with pressure-dependent $F_0^a$ and $T_c$.
+
+    """
+    return h3c.gH0/((1 + h3d.F0a_poly(p))*(Tc_mK(p)))**2
+
+def gz(p):
+    """
+    Material parameter for PHA magnetic energy, linear in magnetic field H, in 
+    dimensionless units, where order parameter is scaled with $k_BT_c$, and 
+    magnetic field is measured in tesla.
+
+    Parameters
+    ----------
+    p : float or arraay-like
+        Pressure in bar.
+
+    Returns
+    -------
+    Value of $g_z$, evaluated with pressure-dependent $F_0^a$ and $T_c$.
+
+    """
+    bn = beta_norm_asarray(1, p)
+    bn5 = bn[4]
+    bn24 = bn[1] + bn[3]
+    return (-bn5/bn24)*h3c.lambda_A1/Tc_mK(p)
+
+def H_scale(t, p):
+    r"""
+    Magnetic field scale implied by material parameters $\alpha$ and $g_H$, 
+    through $H_s^2 \equiv \sqrt{-\alpha/g_H}$).
+
+    Parameters
+    ----------
+    t : float
+        reduced temperature.
+    p : float or arraay-like
+        Pressure in bar.
+
+    Returns
+    -------
+    float or arraay-like (same shape as p)
+        Magnetic field in tesla.
+
+    """
+    return np.sqrt(-alpha_norm(t)/gH(p))
 
 # Theory functions
 def f_scale(p):
 
-    """Free energy density units Joule per nm3 .
+    """ Natural free energy density scale, units Joule per nm3 .
     """
     # return (1/3) * N0(p) * (2 * np.pi * kB * T_mK(1, p) * 1e-3)**2
-    return (1/3) * N0(p) * (h3c.kB * T_mK(1, p) * 1e-3)**2
+    return (1/3) * N0(p) * (h3c.kB * Tc_mK(p) * 1e-3)**2
     
-def delta_beta_norm(p, n):
+def delta_b(p, n):
     """
     Strong coupling corrections to GL free energy material parameters, in units of 
     the modulus of the first weak coupling parameter.
@@ -552,21 +521,21 @@ def delta_beta_norm(p, n):
     if DEFAULT_SC_CORRS in sc_corrs_poly:
         db = h3d.dbeta_data_dict[DEFAULT_SC_CORRS][n-1](p)
     else:
-        db = delta_beta_norm_interp(p, n)
+        db = delta_b_interp(p, n)
     
     if DEFAULT_SC_ADJUST:
             db *= np.exp(-sc_adjust_fun(p))
     return db
 
-def delta_beta_norm_asarray(p):
+def delta_b_asarray(p, n_list=range(1,6)):
     """
     Strong coupling corrections to material parameters, in units of 
     the modulus of the first weak coupling parameter, supplied as a (1,5) array.
     """
-    delta_beta_norm_list = [ delta_beta_norm(p, n) for n in range(1,6)]
-    return np.array(delta_beta_norm_list)
+    delta_b_list = [ delta_b(p, n) for n in n_list]
+    return np.array(delta_b_list)
 
-def delta_beta_norm_interp(p, n): 
+def delta_b_interp(p, n): 
     """Interpolation methods for strong coupling corrections.
     """
     if DEFAULT_SC_CORRS in sc_corrs_interp:
@@ -578,7 +547,7 @@ def delta_beta_norm_interp(p, n):
                          DEFAULT_SC_CORRS)
         return
 
-def delta_beta_norm_polyfit(p, n): 
+def delta_b_polyfit(p, n): 
     """Polynomial methods for strong couping corrections. 
     """
     if DEFAULT_SC_CORRS in sc_corrs_poly:
@@ -608,10 +577,10 @@ def beta_norm(t, p, n):
     """Complete material parameter including strong coupling correction, within units of 
     f_scale/(2 * np.pi * kB * Tc)**2
     """ 
-    b = beta_norm_wc(n)
+    b = b_wc(n)
     # else:
     #     raise ValueError("beta_norm: n must be between 1 and 5")
-    return h3c.beta_const*(b + t * delta_beta_norm(p, n))
+    return h3c.beta_const*(b + t * delta_b(p, n))
 
 
 def beta_norm_asarray(t, p):
@@ -632,7 +601,7 @@ def beta_phase_norm(t, p, phase):
     return np.sum( beta_norm_asarray(t, p) * h3b.R_dict[phase] )
 
 def f_phase_norm(t, p, phase):
-    """Normalised free energy in a givenn phase.
+    """Normalised free energy in a given phase.
     """
     return -0.25* alpha_norm(t)**2 /( beta_phase_norm(t, p, phase))
 
@@ -701,30 +670,364 @@ def delta_polar_norm(t, p):
     """
     return  np.sqrt(- alpha_norm(t)/(2 * beta_polar_norm(t, p)))
 
-def t_AB(p):
+def t_AB(p, low_pressure_nan=True):
     """ AB transition temperature at pressure p, normalised to Tc.
     """
-    t_ab_val = (1/3)/ (delta_beta_norm(p, 1) 
-                       + (delta_beta_norm(p, 3) 
-                       - 2*delta_beta_norm(p, 4) 
-                       - 2*delta_beta_norm(p, 5))/3) 
+    t_ab_val = (1/3)/ (delta_b(p, 1) 
+                       + (delta_b(p, 3) 
+                       - 2*delta_b(p, 4) 
+                       - 2*delta_b(p, 5))/3) 
     
-    if isinstance(t_ab_val, np.ndarray):
-        t_ab_val[t_ab_val > 1] = np.nan
-    elif t_ab_val > 1:
-        t_ab_val = np.nan
+    if low_pressure_nan:
+        if isinstance(t_ab_val, np.ndarray):
+            t_ab_val[t_ab_val > 1] = np.nan
+        elif t_ab_val > 1:
+            t_ab_val = np.nan
             
     return  t_ab_val
 
-def tAB(p):
+def tAB(p, low_pressure_nan=True):
     """Synonym for t_AB.
     """
-    return t_AB(p)
+    return t_AB(p, low_pressure_nan)
 
 def TAB_mK(p):
     """ AB transition temperature at pressure p, in mK
     """
     return tAB(p) * Tc_mK_expt(p)
+
+# specific heats
+
+def C_V_normal(t, p):
+    """
+    Normal phase specific heat in units J / K / nm$^3$, with strong coupling 
+    corrections included.  Uses formula (2.13) from Vollhardt & Woelfle.
+    $$
+    C_V = \frac{\pi^2}{3} N_F k_B^2 T
+    $$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Normal phase specific heat at temperature $t$ and pressure p.
+
+    """
+    
+    return (np.pi**2/3) * h.N0(p) * h.kB**2 *( h.Tc_mK(p)/1000) * t    
+
+def C_V_normal(t, p):
+    """
+    Normal phase specific heat in units J / K / nm$^3$, with strong coupling 
+    corrections included.  Uses formula (2.13) from Vollhardt & Woelfle.
+    $$
+    C_V = \frac{\pi^2}{3} N_F k_B^2 T
+    $$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Normal phase specific heat at temperature $t$ and pressure p.
+
+    """
+    
+    # return (np.pi**2/3) * N0(p) * h3c.kB**2 *(Tc_mK(p)/1000) * t    
+    return  np.pi**2 * f_scale(p) / (Tc_mK(p)/1000) * t
+
+
+def delta_C_V_Tc(p, phase):
+    """
+    Jump in specific heat at superfluid phase transition in units J / K / nm$^3$, 
+    with strong coupling corrections included.  Uses formula (3.78) from 
+    Vollhardt & Woelfle.
+    $$
+    \Delta C_V = \frac{1} N(0) \frac{\partial}{\partial T} \langle \Delta_{\bf k}^\dagger \Delta_{\bf k} \rangle_{\hat{\bf k}}
+    $$
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+    phase : str
+        Phase string, e.g. "A", "B".
+        
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Specific heat jump at pressure p.
+
+    """
+    return  0.25 * f_scale(p) / (Tc_mK(p)/1000 * beta_phase_norm(1, p, phase))
+
+def C_V(t, p, phase):
+    """
+    Specific heat in given phase, with strong coupling 
+    corrections included.  Uses formula (3.77) from Vollhardt & Woelfle.
+    $$
+    C_V = C_N + \Delta C_V
+    $$
+
+    Units:  units J / K / nm$^3$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Specific heat at temperature $t$ and pressure p.
+
+    """
+    return C_V_normal(t,p) + delta_C_V_Tc(p, phase)
+
+def kappa_0(t, p):
+    """
+    Gas-kinetic expression for thermal conductivity, V&W eqn 2.40.  
+    
+    Units: J / ns / nm / K
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Gas-kinetic thermal conductivity at temperature $t$ and pressure p.
+
+    """
+    # C_V is in J / K / nm^3, vf is in m/s (also nm/ns), tau_qp is in seconds
+    return (1/3) * C_V_normal(t, p) * (vf(p))**2 * tau_qp(t, p) * 1e9
+
+def kappa(t, p):
+    """
+    Experimental thermal conductivity, Greywall 1984  
+    
+    Units:    J / ns / nm / K
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Measured thermal conductivity at temperature $t$ and pressure p.
+
+    """
+    p_data = h3d.data_Gre86_therm_cond[:, 0]
+    kappaT_data = h3d.data_Gre86_therm_cond[:, 4]
+    
+    # Greywall is in erg/sec/cm, convert to J/ns/nm 
+    kappaT_interp = np.interp(p, p_data, kappaT_data) * 1e-7/(1e9 * 1e9 * 1e-2)
+
+    if get_setting('DEFAULT_T_SCALE') != 'Greywall':
+        tmp_set = get_setting('DEFAULT_T_SCALE')
+        set_default('DEFAULT_T_SCALE', 'Greywall')
+        T = T_mK(t, p)*1e-3
+        set_default('DEFAULT_T_SCALE', tmp_set)
+    else:
+        T = T_mK(t, p)*1e-3
+
+    print(p, T, kappaT_interp)
+
+    return kappaT_interp/T
+
+def gamma_c(p):
+    """
+    Order parameter damping rate at $T_c$. Units are ns$^{-1}$
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Order parameter damping rate at $T_c$
+
+    """
+    return (16 * h3c.kB * Tc_mK(p)*1e-3) / (np.pi * h3c.hbar) * 1e-9
+
+def thermal_diffusivity(t, p):
+    r"""
+    Thermal diffusivity, defined as
+    $$
+    D_t = \kappa / C_V,
+    $$
+    where $\kappa$ is thermal conductivity and $C_V$ is volumetric heat capacity.
+    
+    Units: nm$^2$ / ns
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Thermal diffusivity.
+
+    """
+    return kappa(t, p)/C_V_normal(t, p)
+
+def thermal_diffusivity_norm(t, p):
+    r"""
+    Dimensionless thermal diffusivity, defined as
+    $$
+    D_t t_{\rm GL} / \xi_{\rm GL}^2
+    $$
+    where $\xi_{\rm GL}$ is the zero-temperature GL coherence length and 
+    $t_{\rm GL} = \xi_{\rm GL}/v_f$ is the GL time.    
+
+    Parameters
+    ----------
+    t : float, int, numpy.ndarray
+        Reduced temperature, $T/T_c$.
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Only one or other of t and p can be an array.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Thermal diffusivity.
+
+    """
+    return thermal_diffusivity(t, p) * tGL(p) / xi(0, p)**2
+
+def diffusion_relaxation_length(p):
+    r"""
+    A length scale derived from the thermal diffusivity (dimesnions L$^2$ / T) 
+    and the order parameter relaxation time at the critical temperature 
+    $\gamma_c$, dimensions T${-1}$.
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray
+        Pressure in bar.
+
+    Returns
+    -------
+    float or numpy.ndarray
+        Diffusion relaxation length.
+
+    """
+    return (thermal_diffusivity(1, p) / gamma_c(p)  )**0.5
+
+def hot_blob_length_scale(p, phase='A'):
+    """
+    Length scale of a normal region produced by 1 eV energy, injected into 
+    superfluid in given phase at zero temperature, defined as 
+    $$
+    L = (C_V T_c/ 1 {\rm eV})^{-1/3}
+    $$
+    Units: nm.
+    
+    Radius of hot blob would contain geometric factors from region shape, and 
+    algebraic factors from integration of temperature between $0$ and $T_c$.
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray 
+        Pressure in bar.
+
+    Returns
+    -------
+    type(p)
+        Length scale of the heated region, in nm..
+
+    """
+    C_V_Tc = C_V_normal(1, p) + delta_C_V_Tc(p, phase)
+    return (Tc_mK(p)/1000 * C_V_Tc/h3c.c.e)**(-1/3)
+
+def hot_blob_size(p, t, Q_eV, phase='A'):
+    """
+    Size of a normal region produced by Q_eV energy, injected into 
+    superfluid in given phase at reduced temperature t. 
+    
+    Units: nm.
+    
+    Radius of hot blob would contain geometric factors from region shape, and 
+    algebraic factors from integration of temperature between $0$ and $T_c$.
+
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray 
+        Pressure in bar.
+
+    Returns
+    -------
+    type(p)
+        Length scale of the heated region, in nm..
+
+    """
+    return hot_blob_length_scale(p, phase='A') * (Q_eV/(1 - t))**(1/3)
+
+def hot_blob_quench_time(p, t, Q_eV=1.0, phase='A'):
+    """
+    Quench time of a normal region produced by Q_eV energy, injected into 
+    superfluid in given phase at reduced temperature t. 
+    
+    Units: ns.
+    
+    Parameters
+    ----------
+    p : float, int, numpy.ndarray 
+        Pressure in bar.
+
+    Returns
+    -------
+    type(p)
+        Quench time for hot blob, in ns..
+
+    """
+    return hot_blob_size(p, t, Q_eV, phase='A')**2/thermal_diffusivity(t, p) *1/(1-t)
 
 # Generate SC adjustment factor
 def logf_poly():
@@ -764,496 +1067,29 @@ def mass_B_norm(t, p, JC):
 
     return np.sqrt(m2)        
 
+# Now in he3_magnetic
 
-def critical_radius(t, p, sigma=0.95, dim=3):
-    """Radius of critical bubble, in nm.  
-    Ideally will optionally use function to get 
-    surface tension. Uses approximation."""
-    # if isinstance(sigma_fun, float):
-    sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
-    # elif isinstance(sigma_fun, np.ndarray):
-        # sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
+# def critical_radius(t, p, sigma=0.95, dim=3):
+#     """Radius of critical bubble, in nm.  
+#     Ideally will optionally use function to get 
+#     surface tension. Uses approximation."""
+#     # if isinstance(sigma_fun, float):
+#     sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
+#     # elif isinstance(sigma_fun, np.ndarray):
+#         # sigma_AB = sigma_fun*np.abs(f_B_norm(t,p))*xi(t,p)
     
-    return (dim-1)*sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
+#     return (dim-1)*sigma_AB/np.abs(f_A_norm(t,p) - f_B_norm(t,p))
 
-
-# def tr(A):
+# def critical_energy_kBTc(t, p, sigma=0.95, dim=3):
+#     """Energy of critical bubble, in units of kBTc.  
+#     Uses thin wall & Ginzburg-Landau approximation.
 #     """
-#     Trace of order parameter array on last two indices
 
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     TYPE
-#         DESCRIPTION.
-
-#     """
-#     d = A.ndim    
-#     return np.trace(A, axis1=d-2,  axis2=d-1 )
-
-
-# def trans(A):
-#     """
-#     Transpose of order parameter array on last two indices
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     TYPE
-#         DESCRIPTION.
-
-#     """
-#     d = A.ndim    
-#     return np.swapaxes(A, d-2,  d-1 )
-
-
-# def hconj(A):
-#     """
-#     Hermitian conjugate of order parameter array on last two indices
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     TYPE
-#         DESCRIPTION.
-
-#     """
-#     return trans(A).conj()
-
-
-# def mult_hconj(A):
-#     """
-#     Multiplies A by its Hermitian conjugate on last two indices
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     ndarray
-#         Same shape as input array.
-
-#     """
-#     return np.matmul(A, hconj(A))
-
-# def mult_trans(A):
-#     """
-#     Multiplies A by its transpose on last two indices
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     ndarray
-#         Same shape as input array.
-
-#     """
-#     return np.matmul(A, trans(A))
-
-# def mat2vec(A):
-#     sz = A.size 
-#     return A.reshape(sz)
-
-# def vec2mat(Av):
-#     sz = Av.size 
-#     return Av.reshape((sz//9, 3, 3))
-
-
-# def eig_vals(A):
-#     """
-#     Extracts eigenvalues of array A
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     ndarray
-#         shape (m,n,...,3).
-
-#     """
-#     A_dim = A.ndim
-#     A_shape = A.shape
-#     A_size = A.size
-#     A_flatter = A.reshape(A_size//9, 3, 3)
-#     e_vals = np.zeros((A_size//9, 3), dtype=complex)
-#     for n, A_el in enumerate(A_flatter):
-#         e_vals[n,:] = sl.eigvals(A_el)
-#     return e_vals.reshape(A_shape[0:A_dim-2] + (3,))
-
-
-# def eig_orbital(A):
-#     """
-#     Extracts eigenvalues of array A^dagger A, relevant for angular momentum vectors
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     ndarray
-#         shape (m,n,...,3).
-
-#     """
-#     H = np.matmul(hconj(A), A)
-#     H_dim = H.ndim
-#     H_shape = H.shape
-#     H_size = H.size
-#     H_flatter = H.reshape(H_size//9, 3, 3)
-#     e_vals = np.zeros((H_size//9, 3), dtype=float)
-#     for n, H_el in enumerate(H_flatter):
-#         e_vals[n,:] = sl.eigvals(H_el)
-#     e_vals.sort()
-#     return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
-
-
-# def eig_spin(A):
-#     """
-#     Extracts eigenvalues of array A A^dagger, relevant for spin vectors
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter array.
-
-#     Returns
-#     -------
-#     ndarray
-#         shape (m,n,...,3).
-
-#     """
-#     H = np.matmul(A, hconj(A))
-#     H_dim = H.ndim
-#     H_shape = H.shape
-#     H_size = H.size
-#     H_flatter = H.reshape(H_size//9, 3, 3)
-#     e_vals = np.zeros((H_size//9, 3), dtype=float)
-#     for n, H_el in enumerate(H_flatter):
-#         e_vals[n,:] = sl.eigvals(H_el)
-#     e_vals.sort()
-#     return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
-
-
-# def args_parse(*args):
-#     n_el = len(args)
-#     if n_el == 2:
-#         if isinstance(args[1], np.ndarray):
-#             t = None
-#             p = None
-#             al = args[0]
-#             bn = args[1]
-#         else:
-#             t, p = args
-#             al = alpha_norm(t)
-#             bn = beta_norm_asarray(t, p)
-#     else:
-#         t = None
-#         p = None
-#         al = args[0][0]
-#         bn = args[0][1:]
-#     return al, bn, t, p
-
-
-# # def U(A, alpha_norm, beta_norm_arr):
-# def U(A, *args):
-#     """
-#     Bulk free energy for superfluid He3
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter.
-#     alpha_norm : float
-#         alpha parameter, normalised.
-#     beta_norm_arr : ndarray, shape (5,1)
-#         beta parameters, normalised.
-
-#     Returns
-#     -------
-#     float or ndarray
-#         Normalised bulk free energy.
-
-#     """
-#     al, bn, _, _ = args_parse(*args)
-
-#     dim = A.ndim
+#     Rc = critical_radius(t, p, sigma, dim)
+#     sigma_AB = sigma*np.abs(f_B_norm(t,p))*xi(t,p)
+#     delta_fAB = np.abs(f_A_norm(t, p) - f_B_norm(t, p))
     
-#     A_T = np.swapaxes(A, dim-2, dim-1)
-#     A_C = np.conj(A)
-#     A_H = np.conj(A_T)
-
-#     Un0 = al * h3m.tr( np.matmul(A , A_H) )
+#     Ec = f_scale(p)*(4*np.pi*sigma_AB*Rc**2 - (4*np.pi/3)*delta_fAB*Rc**3)
     
-#     Un1 = bn[0] *  h3m.tr( np.matmul(A , A_T)) * h3m.tr(np.matmul(A_C , A_H) ) 
-#     Un2 = bn[1] *  h3m.tr( np.matmul(A , A_H) )**2
-#     Un3 = bn[2] *  h3m.tr( np.matmul(np.matmul(A , A_T) , np.matmul(A_C , A_H) )  )
-#     Un4 = bn[3] *  h3m.tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
-#     Un5 = bn[4] *  h3m.tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
-#     return (Un0 + Un1 + Un2 + Un3 + Un4 + Un5).real
+#     return Ec/(h3c.kB*Tc_mK(p)*1e-3)
 
-
-# # def U(A, alpha_norm, beta_norm_arr):
-# def U_terms(A, *args):
-#     """
-#     Bulk free energy for superfluid He3
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...,3,3)
-#         order parameter.
-#     alpha_norm : float
-#         alpha parameter, normalised.
-#     beta_norm_arr : ndarray, shape (5,1)
-#         beta parameters, normalised.
-
-#     Returns
-#     -------
-#     float or ndarray
-#         Normalised bulk free energy.
-
-#     """
-#     al, bn, _, _ = args_parse(*args)
-
-#     dim = A.ndim
-    
-#     A_T = np.swapaxes(A, dim-2, dim-1)
-#     A_C = np.conj(A)
-#     A_H = np.conj(A_T)
-
-#     Un0 = al * h3m.tr( np.matmul(A , A_H) )
-    
-#     Un1 = bn[0] *  h3m.tr( np.matmul(A , A_T)) * h3m.tr(np.matmul(A_C , A_H) ) 
-#     Un2 = bn[1] *  h3m.tr( np.matmul(A , A_H) )**2
-#     Un3 = bn[2] *  h3m.tr( np.matmul(np.matmul(A , A_T) , np.matmul(A_C , A_H) )  )
-#     Un4 = bn[3] *  h3m.tr( np.matmul(np.matmul(A , A_H) , np.matmul(A   , A_H) )  )
-#     Un5 = bn[4] *  h3m.tr( np.matmul(np.matmul(A , A_H) , np.matmul(A_C , A_T) )  )
-#     return np.array([Un0, Un1, Un2, Un3, Un4, Un5])
-
-
-# def dU_dA(A, *args):
-#     """
-#     Derivative of bulk free energy for superfluid He3.')
-
-#     Parameters
-#     ----------
-#     A : ndarray dtype complex, shape (m,n,...3,3)
-#         order parameter.
-#     alpha_norm : float
-#         alpha material parameter, dimensionless.
-#     beta_norm_arr : ndarray, shape (5,1)
-#         beta material parameters, dimensionless.
-
-#     Returns
-#     -------
-#     float or ndarray
-#         Normalised derivative of bulk free energy.
-
-#     """
-#     al, bn, _, _ = args_parse(*args)
-
-#     dim = A.ndim
-    
-#     A_T = np.swapaxes(A, dim-2, dim-1)
-#     A_C = np.conj(A)
-#     A_H = np.conj(A_T)
-
-#     dUn0 = al * A
-        
-#     dUn1 = 2 * bn[0] *  np.matmul(np.multiply.outer(h3m.tr( np.matmul(A , A_T)), h3b.id3 ) , A_C)
-#     dUn2 = 2 * bn[1] *  np.matmul(np.multiply.outer(h3m.tr( np.matmul(A , A_H)), h3b.id3 ) , A )
-#     dUn3 = 2 * bn[2] *  np.matmul(A , np.matmul(A_T , A_C))
-#     dUn4 = 2 * bn[3] *  np.matmul(A , np.matmul(A_H   , A))
-#     dUn5 = 2 * bn[4] *  np.matmul(A_C , np.matmul(A_T , A))
-#     return dUn0 + dUn1 + dUn2 + dUn3 + dUn4 + dUn5
-
-
-# def line_section(X, D, t, p, scale=None, n=500):
-#     """
-#     Retuens a line section in order parameter space, along with the free energy 
-#     along it, and the parameter of the line.
-
-#     Parameters
-#     ----------
-#     X : string or Complex array shape (3,3)
-#         Start point of line. If a string, specifies the inert phase.
-#     D : string or Complex array shape (3,3)
-#         If a string, the end point inert phase. If array, the direction of the line
-#     t : float
-#         Reduced temperature in terms of Tc(p).
-#     p : float
-#         Pressure in bar.
-#     scale : float, optional
-#         Multiplies direction matrix. The default is None, in which case the 
-#         scale is the weak coupling gap scale delta_wc(t).
-#     n : integer, optional
-#         Number of points on the line. The default is 500.
-
-#     Returns
-#     -------
-#     v : numpy.ndarray shape (n,)
-#         Line parameter, between 0 and v_max=1.5.
-#     A_XD : Complex array shape (n,3,3)
-#         Order parameter along line.
-#     U_XD : float array shape (n,)
-#         Free energy along line.
-
-#     """
-#     if scale is None:
-#         scale = delta_wc(t)
-#     v_max = 1.5
-#     v = np.linspace(0,1,n)*v_max
-  
-#     if isinstance(X, str):
-#         delta_X = delta_phase_norm(t, p, X)
-#         X = h3b.D_dict[X]
-#         if isinstance(D, str):
-#             D = h3b.D_dict[D] - X
-#             D = D/h3m.norm(D)
-
-#     A_XD = np.multiply.outer( np.ones_like(v) , X)*delta_X + np.multiply.outer( v , D)*scale
-#     U_XD = U(A_XD, (t-1), beta_norm_asarray(t, p) )
-    
-#     return v, A_XD, U_XD
-
-# def norm(D, n=1):
-#     """
-#     n-Norm of complex square array D, defined as $tr(D D^\dagger)^{n/2}$
-
-#     Parameters
-#     ----------
-#     D : Complex array shape 
-#         Order parameter array.
-
-#     Returns
-#     -------
-#     float
-#         n-Norm of array.
-
-#     """
-#     # D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
-#     D_H = h3m.hconj(D)
-#     norm2 = h3m.tr(np.matmul(D, D_H)).real
-#     if n == 1:
-#         return norm2
-#     else:
-#         return norm2**(n/2)
-
-
-# def inner(X, Y):
-#     """
-#     Inner product of complex square arrays X, Y
-
-#     Parameters
-#     ----------
-#     X,Y : Complex array shape 
-#         Order parameter array.
-
-#     Returns
-#     -------
-#     float, dtype complex
-#         Inner product.
-
-#     """
-#     dim = Y.ndim
-#     # X_H = np.conj(np.swapaxes(Y, dim-2, dim-1))
-#     Y_H = np.conj(np.swapaxes(Y, dim-2, dim-1))
-#     return (h3m.tr(np.matmul(X, Y_H))).real
-
-
-# def distance(X, Y):
-#     """
-#     Distance between (3,3) complex arrays defined by norm.    
-
-#     Parameters
-#     ----------
-#     X : Complex array shape (3,3)
-#         Order parameter array.
-#     Y : Complex array shape (3,3)
-#         Order parameter array.
-
-#     Returns
-#     -------
-#     float
-#         Distance between X and Y.
-
-#     """
-#     D = X - Y
-#     return norm(D)
-
-
-# def project(X, Y):
-#     """
-#     Projects X onto Y, X, Y (3,3) complex arrays.
-#     X - (X,Y) Y/(Y,Y)
-       
-
-#     Parameters
-#     ----------
-#     X : Complex array shape (3,3)
-#         Order parameter array.
-#     Y : Complex array shape (3,3)
-#         Order parameter array.
-
-#     Returns
-#     -------
-#     float
-#         X projected onto Y.
-
-#     """
-
-#     return X -  np.multiply.outer(inner(X,Y)/inner(Y,Y), Y )
-
-
-# def lengths(X, Y):
-#     """
-#     Length of X along Y and orthoginal to Y
-#     Projects X onto Y, X, Y (3,3) complex arrays.
-#     X - (X,Y) Y/(Y,Y)
-       
-
-#     Parameters
-#     ----------
-#     X : Complex array shape (n,m,..3,3)
-#         Order parameter array.
-#     Y : Complex array shape (3,3)
-#         Order parameter array.
-
-#     Returns
-#     -------
-#     float
-#         X projected onto Y.
-
-#     """
-#     print((inner(X,Y)/inner(Y,Y)).shape)
-#     print(Y.shape)
-#     X_Y = X - np.multiply.outer(inner(X,Y)/inner(Y,Y), Y ) 
-
-#     return np.array([norm(X_Y), norm(X - X_Y)]).T
-
-
-# for x in ["DEFAULT_SC_ADJUST", "DEFAULT_SC_CORRS", "DEFAULT_T_SCALE"]:
-#     report_setting(x)
-
-
-    

@@ -162,6 +162,32 @@ def eig_orbital(A):
     e_vals.sort()
     return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
 
+def eig_all_orbital(A):
+    """
+    Extracts eigenvalues and eigenvectors of array A^dagger A, relevant for angular momentum vectors
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    ndarray (dtype float), ndarray (dtype complex)
+        shape (m,n,...,3), shape (m,n,...,3,3)
+
+    """
+    H = np.matmul(hconj(A), A)
+    H_dim = H.ndim
+    H_shape = H.shape
+    H_size = H.size
+    H_flatter = H.reshape(H_size//9, 3, 3)
+    e_vals = np.zeros((H_size//9, 3), dtype=float)
+    e_vecs = np.zeros((H_size//9, 3, 3), dtype=complex)
+    for n, H_el in enumerate(H_flatter):
+        e_vals[n,:], e_vecs[n,:] = sl.eig(H_el)
+    # e_vals.sort()
+    return e_vals.reshape(H_shape[0:H_dim-2] + (3,)), e_vecs.reshape(H_shape[0:H_dim-2] + (3,3))
 
 def eig_spin(A):
     """
@@ -189,6 +215,33 @@ def eig_spin(A):
     e_vals.sort()
     return e_vals.reshape(H_shape[0:H_dim-2] + (3,))
 
+def eig_all_spin(A):
+    """
+    Extracts eigenvalues and eigenvectors of array A A^dagger, relevant for spin vectors
+
+    Parameters
+    ----------
+    A : ndarray dtype complex, shape (m,n,...,3,3)
+        order parameter array.
+
+    Returns
+    -------
+    ndarray (dtype float), ndarray (dtype complex)
+        shape (m,n,...,3), shape (m,n,...,3,3)
+
+    """
+    H = np.matmul(A, hconj(A))
+    H_dim = H.ndim
+    H_shape = H.shape
+    H_size = H.size
+    H_flatter = H.reshape(H_size//9, 3, 3)
+    e_vals = np.zeros((H_size//9, 3), dtype=float)
+    e_vecs = np.zeros((H_size//9, 3, 3), dtype=complex)
+    for n, H_el in enumerate(H_flatter):
+        e_vals[n,:], e_vecs[n,:] = sl.eig(H_el)
+    # e_vals.sort()
+    return e_vals.reshape(H_shape[0:H_dim-2] + (3,)), e_vecs.reshape(H_shape[0:H_dim-2] + (3,3))
+
 def norm(D, n=1):
     """
     n-Norm of complex square array D, defined as $tr(D D^\dagger)^{n/2}$
@@ -207,10 +260,10 @@ def norm(D, n=1):
     # D_H = np.conj(np.swapaxes(D, dim-2, dim-1))
     D_H = hconj(D)
     norm2 = tr(np.matmul(D, D_H)).real
-    if n == 1:
-        return norm2
-    else:
-        return norm2**(n/2)
+    # if n == 1:
+    #     return norm2**(n/2)
+    # else:
+    return norm2**(n/2)
 
 
 def inner(X, Y):
@@ -303,3 +356,36 @@ def lengths(X, Y):
     X_Y = X - np.multiply.outer(inner(X,Y)/inner(Y,Y), Y ) 
 
     return np.array([norm(X_Y), norm(X - X_Y)]).T
+
+def levi_civita3_matrix2vector(X):
+    # X_dim = X.ndim
+    # X_shape = X.shape
+    # X_size = X.size
+    # X_flatter = X.reshape(X_size//9, 3, 3)
+    # eps_X = np.array([X_flatter[:,1,2] - X_flatter[:,2,1], 
+    #                   X_flatter[:,2,0] - X_flatter[:,0,2], 
+    #                   X_flatter[:,0,1] - X_flatter[:,1,0]])
+    # return eps_X.reshape(X_shape[0:X_dim-2] + (3,)) 
+    # X_dim = X.ndim
+    # X_shape = X.shape
+    # X_size = X.size
+    # X_flatter = X.reshape(X_size//9, 3, 3)
+    eps_X = np.array([X[...,1,2] - X[...,2,1], 
+                      X[...,2,0] - X[...,0,2], 
+                      X[...,0,1] - X[...,1,0]])
+    return eps_X.transpose()
+
+def levi_civita3_vector2matrix(v):
+    v_dim = v.ndim
+    v_shape = v.shape
+    v_size = v.size
+    v_flatter = v.reshape(v_size//3, 3)
+    eps_X = np.zeros((v_size//3, 3, 3))
+    eps_X[:,0,1] = v_flatter[:,2]
+    eps_X[:,1,2] = v_flatter[:,0]
+    eps_X[:,0,2] = -v_flatter[:,1]
+    eps_X[:,1,0] = -v_flatter[:,2]
+    eps_X[:,2,1] = -v_flatter[:,0]
+    eps_X[:,2,0] = +v_flatter[:,1]
+
+    return eps_X.reshape(v_shape[0:v_dim-1] + (3,3)) 
